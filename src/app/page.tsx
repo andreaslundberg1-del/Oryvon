@@ -2012,10 +2012,10 @@ export default function Home() {
                       </div>
 
                       <h1
-                        className="font-normal tracking-[0.15em] text-white leading-tight"
+                        className="font-normal tracking-[0.15em] text-green-500 leading-tight"
                         style={{
                           fontFamily: "'Cinzel', serif",
-                          fontSize: 'clamp(1.75rem, 3vw, 3.5rem)',
+                          fontSize: '10rem',
                           textShadow: "0 4px 20px rgba(0,0,0,0.8)",
                         }}
                       >
