@@ -1,8 +1,9 @@
 "use client";
 
 import React from 'react';
-import { Palette, Image, Video, Type, Zap } from 'lucide-react';
+import { Palette, Type } from 'lucide-react';
 import { HomepageDesignConfig } from '@/lib/admin-config';
+import { MediaPicker } from '@/components/admin/MediaPicker';
 
 interface HomepageDesignSectionProps {
   config: HomepageDesignConfig;
@@ -52,21 +53,12 @@ export function HomepageDesignSection({ config, onChange }: HomepageDesignSectio
 
       {/* Background URL */}
       {config.backgroundType === 'image' || config.backgroundType === 'video' ? (
-        <div className="space-y-2">
-          <label className="text-xs font-mono uppercase tracking-wider text-white/40">
-            {config.backgroundType === 'video' ? 'Video URL' : 'Background URL'}
-          </label>
-          <div className="relative">
-            <Image className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
-            <input
-              type="text"
-              value={config.backgroundType === 'video' ? config.backgroundVideoUrl : config.backgroundUrl}
-              onChange={(e) => handleChange(config.backgroundType === 'video' ? 'backgroundVideoUrl' : 'backgroundUrl', e.target.value)}
-              className="w-full bg-black/40 border border-white/10 rounded-lg pl-12 pr-4 py-3 text-white placeholder-white/30 focus:border-amber-500/50 focus:outline-none transition-all"
-              placeholder="/Images/background.jpg"
-            />
-          </div>
-        </div>
+        <MediaPicker
+          value={config.backgroundType === 'video' ? config.backgroundVideoUrl : config.backgroundUrl}
+          onChange={(value) => handleChange(config.backgroundType === 'video' ? 'backgroundVideoUrl' : 'backgroundUrl', value)}
+          label={config.backgroundType === 'video' ? 'Video URL' : 'Background URL'}
+          accept={config.backgroundType === 'video' ? 'video/*' : 'image/*'}
+        />
       ) : null}
 
       {/* Background Color */}

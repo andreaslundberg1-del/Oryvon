@@ -1,8 +1,9 @@
 "use client";
 
 import React from 'react';
-import { Type, Link as LinkIcon, Image as ImageIcon, ToggleLeft, ToggleRight, Crown } from 'lucide-react';
+import { Type, Link as LinkIcon, Crown } from 'lucide-react';
 import { HomepageContentConfig } from '@/lib/admin-config';
+import { MediaPicker } from '@/components/admin/MediaPicker';
 
 interface HomepageContentSectionProps {
   config: HomepageContentConfig;
@@ -109,34 +110,20 @@ export function HomepageContentSection({ config, onChange }: HomepageContentSect
 
         <div className="space-y-4">
           {/* Logo URL */}
-          <div className="space-y-2">
-            <label className="text-xs font-mono uppercase tracking-wider text-white/40">Logo URL</label>
-            <div className="relative">
-              <ImageIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
-              <input
-                type="text"
-                value={config.logoUrl}
-                onChange={(e) => handleChange('logoUrl', e.target.value)}
-                className="w-full bg-black/40 border border-white/10 rounded-lg pl-12 pr-4 py-3 text-white placeholder-white/30 focus:border-amber-500/50 focus:outline-none transition-all"
-                placeholder="/logo.png"
-              />
-            </div>
-          </div>
+          <MediaPicker
+            value={config.logoUrl}
+            onChange={(value) => handleChange('logoUrl', value)}
+            label="Logo URL"
+            accept="image/*"
+          />
 
           {/* Symbol URL */}
-          <div className="space-y-2">
-            <label className="text-xs font-mono uppercase tracking-wider text-white/40">Symbol URL</label>
-            <div className="relative">
-              <ImageIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
-              <input
-                type="text"
-                value={config.symbolUrl}
-                onChange={(e) => handleChange('symbolUrl', e.target.value)}
-                className="w-full bg-black/40 border border-white/10 rounded-lg pl-12 pr-4 py-3 text-white placeholder-white/30 focus:border-amber-500/50 focus:outline-none transition-all"
-                placeholder="/symbol.png"
-              />
-            </div>
-          </div>
+          <MediaPicker
+            value={config.symbolUrl}
+            onChange={(value) => handleChange('symbolUrl', value)}
+            label="Symbol URL"
+            accept="image/*"
+          />
 
           {/* Show Logo Toggle */}
           <div className="flex items-center justify-between">
