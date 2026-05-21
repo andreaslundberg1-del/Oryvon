@@ -27,8 +27,8 @@ export function MediaPicker({ value, onChange, label, accept = 'image/*', maxSiz
     }
 
     // Validate file type
-    if (!file.type.startsWith('image/')) {
-      alert('Please select an image file');
+    if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
+      alert('Please select an image or video file');
       return;
     }
 
@@ -36,38 +36,50 @@ export function MediaPicker({ value, onChange, label, accept = 'image/*', maxSiz
     setUploadProgress(0);
 
     try {
-      // Simulate upload progress
-      const progressInterval = setInterval(() => {
-        setUploadProgress(prev => {
-          if (prev >= 90) {
-            clearInterval(progressInterval);
-            return 90;
-          }
-          return prev + 10;
-        });
-      }, 100);
-
-      // In a real implementation, you would upload to your server/storage
-      // For now, we'll create a local object URL
       const formData = new FormData();
       formData.append('file', file);
 
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Use XMLHttpRequest for upload progress
+      const xhr = new XMLHttpRequest();
+      
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) {
+          const percentComplete = Math.round((e.loaded / e.total) * 100);
+          setUploadProgress(percentComplete);
+        }
+      });
 
-      // Create object URL for preview (in production, this would be the server URL)
-      const objectUrl = URL.createObjectURL(file);
-      
-      clearInterval(progressInterval);
-      setUploadProgress(100);
-      
-      // Update the URL (in production, this would be the returned URL from the server)
-      onChange(objectUrl);
-      
-      setTimeout(() => {
+      xhr.addEventListener('load', () => {
+        if (xhr.status === 200) {
+          try {
+            const response = JSON.parse(xhr.responseText);
+            if (response.success && response.url) {
+              onChange(response.url);
+              setUploadProgress(100);
+            } else {
+              throw new Error(response.error || 'Upload failed');
+            }
+          } catch (e) {
+            console.error('Parse error:', e);
+            alert('Upload failed. Please try again.');
+          }
+        } else {
+          throw new Error('Upload failed');
+        }
         setIsUploading(false);
         setUploadProgress(0);
-      }, 500);
+      });
+
+      xhr.addEventListener('error', () => {
+        console.error('Upload error');
+        setIsUploading(false);
+        setUploadProgress(0);
+        alert('Upload failed. Please try again.');
+      });
+
+      xhr.open('POST', '/api/upload');
+      xhr.send(formData);
+      
     } catch (error) {
       console.error('Upload failed:', error);
       setIsUploading(false);
