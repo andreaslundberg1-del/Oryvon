@@ -1906,12 +1906,35 @@ export default function Home() {
         </div>
 
         {/* Content wrapper */}
-        <div className="w-full py-4 md:py-6 pb-20 md:pb-24 flex flex-col justify-between items-center relative z-30">
+        <div 
+          className="w-full flex flex-col justify-between items-center relative z-30"
+          style={{
+            paddingTop: 'clamp(1rem, 2vw, 2rem)',
+            paddingBottom: 'clamp(3rem, 6vw, 6rem)',
+            paddingLeft: 'clamp(1rem, 2vw, 2.5rem)',
+            paddingRight: 'clamp(1rem, 2vw, 2.5rem)',
+          }}
+        >
           {selectedGenre && activeGenreInfo ? (
             /* ── Immersive Unified Netflix/IMDb Multiverse Portal (Layer 1) ── */
-            <div className="flex flex-col items-center w-full pt-16 p-6 md:p-10 gap-8 md:gap-10 pb-32">
+            <div 
+              className="flex flex-col items-center w-full"
+              style={{
+                paddingTop: 'clamp(2rem, 4vw, 4rem)',
+                gap: 'clamp(1.5rem, 3vw, 3rem)',
+              }}
+            >
               {/* Top Navigation Bar */}
-              <div className="w-full max-w-[1920px] px-6 md:px-12 flex flex-col md:flex-row justify-between items-center gap-4 md:gap-6 border-b border-white/10 pb-6">
+              <div 
+                className="flex flex-col md:flex-row justify-between items-center gap-4 border-b border-white/10"
+                style={{
+                  maxWidth: 'clamp(1400px, 90vw, 1920px)',
+                  width: '100%',
+                  paddingBottom: 'clamp(1rem, 1.5vw, 1.5rem)',
+                  paddingLeft: 'clamp(1rem, 2vw, 2.5rem)',
+                  paddingRight: 'clamp(1rem, 2vw, 2.5rem)',
+                }}
+              >
                 <div className="flex flex-col items-center md:items-start gap-1">
                   <span
                     className="font-mono text-[7px] md:text-[8px] tracking-[0.4em] uppercase"
@@ -1920,8 +1943,11 @@ export default function Home() {
                     {t('common.systemActive')} // {activeGenreInfo.system}
                   </span>
                   <h2
-                    className="text-3xl md:text-4xl lg:text-5xl font-normal tracking-[0.2em] text-white uppercase"
-                    style={{ fontFamily: "'Cinzel', serif" }}
+                    className="font-normal tracking-[0.2em] text-white uppercase"
+                    style={{
+                      fontFamily: "'Cinzel', serif",
+                      fontSize: 'clamp(1.25rem, 2vw, 2rem)',
+                    }}
                   >
                     {activeGenreInfo.label} {t('uni.realms').toUpperCase()}
                   </h2>
@@ -1946,10 +1972,20 @@ export default function Home() {
 
               {/* Widescreen Hero Carousel (Cinema grade overview) */}
               {featuredSlides.length > 0 && (
-                <div className="carousel-container w-full max-w-[1920px] px-6 md:px-12 relative rounded-xl overflow-hidden mb-6 animate-fade-in">
+                <div 
+                  className="relative rounded-xl overflow-hidden mb-6"
+                  style={{
+                    maxWidth: 'clamp(1400px, 90vw, 1920px)',
+                    width: '100%',
+                    paddingLeft: 'clamp(1rem, 2vw, 2.5rem)',
+                    paddingRight: 'clamp(1rem, 2vw, 2.5rem)',
+                  }}
+                >
                   <div
-                    className="relative w-full rounded-xl overflow-hidden border border-white/10 aspect-[21/9] md:aspect-[16/9] lg:aspect-[21/9] min-h-[400px] md:min-h-[480px] lg:min-h-[600px] bg-cover bg-center transition-all duration-1000 ease-in-out"
+                    className="relative w-full rounded-xl overflow-hidden border border-white/10 bg-cover bg-center transition-all duration-1000 ease-in-out"
                     style={{
+                      aspectRatio: '21 / 9',
+                      minHeight: 'clamp(18rem, 40vw, 35rem)',
                       backgroundImage: `url(${featuredSlides[activeSlide].image})`,
                       boxShadow: `0 20px 80px rgba(0,0,0,0.95), inset 0 0 100px rgba(0,0,0,0.85)`,
                     }}
@@ -1970,9 +2006,10 @@ export default function Home() {
                       </div>
 
                       <h1
-                        className="text-4xl md:text-5xl lg:text-7xl xl:text-8xl font-normal tracking-[0.15em] text-white leading-tight"
+                        className="font-normal tracking-[0.15em] text-white leading-tight"
                         style={{
                           fontFamily: "'Cinzel', serif",
+                          fontSize: 'clamp(1.75rem, 3vw, 3.5rem)',
                           textShadow: "0 4px 20px rgba(0,0,0,0.8)",
                         }}
                       >
@@ -1992,7 +2029,14 @@ export default function Home() {
                         )}
                       </div>
 
-                      <p className="text-white/70 text-sm md:text-base lg:text-lg font-sans leading-relaxed tracking-wide mt-2 md:mt-3 line-clamp-2 md:line-clamp-3">
+                      <p 
+                        className="font-sans leading-relaxed tracking-wide line-clamp-2 md:line-clamp-3"
+                        style={{
+                          color: 'rgba(255,255,255,0.7)',
+                          fontSize: 'clamp(0.875rem, 1.2vw, 1.125rem)',
+                          marginTop: 'clamp(0.5rem, 1vw, 1rem)',
+                        }}
+                      >
                         {featuredSlides[activeSlide].teaser}
                       </p>
 
@@ -2065,7 +2109,20 @@ export default function Home() {
               )}
 
               {/* Filter & Search Console */}
-              <div className="w-full max-w-[1920px] px-6 md:px-12 flex flex-col lg:flex-row gap-4 md:gap-6 justify-between items-center py-4 md:py-5 mb-4 md:mb-5 bg-white/[0.02] border border-white/5 rounded-xl p-5 md:p-8 backdrop-blur-md">
+              <div 
+                className="flex flex-col lg:flex-row gap-4 justify-between items-center rounded-xl backdrop-blur-md"
+                style={{
+                  maxWidth: 'clamp(1400px, 90vw, 1920px)',
+                  width: '100%',
+                  paddingLeft: 'clamp(1rem, 2vw, 2.5rem)',
+                  paddingRight: 'clamp(1rem, 2vw, 2.5rem)',
+                  paddingTop: 'clamp(0.75rem, 1.25vw, 1.25rem)',
+                  paddingBottom: 'clamp(0.75rem, 1.25vw, 1.25rem)',
+                  marginBottom: 'clamp(0.75rem, 1.25vw, 1.25rem)',
+                  backgroundColor: 'rgba(255,255,255,0.02)',
+                  border: '1px solid rgba(255,255,255,0.05)',
+                }}
+              >
                 {/* Search Bar */}
                 <div className="relative w-full lg:max-w-md">
                   <input
@@ -2155,7 +2212,16 @@ export default function Home() {
                   </span>
                 </div>
               ) : (
-                <div className="w-full max-w-[1920px] px-6 md:px-12 flex flex-col gap-10">
+                <div 
+                  className="flex flex-col"
+                  style={{
+                    maxWidth: 'clamp(1400px, 90vw, 1920px)',
+                    width: '100%',
+                    paddingLeft: 'clamp(1rem, 2vw, 2.5rem)',
+                    paddingRight: 'clamp(1rem, 2vw, 2.5rem)',
+                    gap: 'clamp(1.5rem, 3vw, 3rem)',
+                  }}
+                >
                   {filteredUniverses.length === 0 ? (
                     <div className="w-full text-center py-20 flex flex-col items-center gap-4">
                       <Compass size={60} color={activeGenreInfo.color} pulse />
@@ -2184,11 +2250,19 @@ export default function Home() {
                           </span>
                         </div>
 
-                        <div className="flex flex-wrap gap-8 pt-2">
+                        <div 
+                          className="flex flex-wrap"
+                          style={{
+                            gap: 'clamp(1rem, 2vw, 2.5rem)',
+                            paddingTop: 'clamp(0.5rem, 1vw, 1rem)',
+                          }}
+                        >
                           {filteredUniverses.filter(u => u.featured || filteredUniverses.indexOf(u) === 0).map((uni) => (
                             <div
                               key={uni.id}
-                              className="w-[320px] md:w-[440px] lg:w-[400px]"
+                              style={{
+                                width: 'clamp(18rem, 30vw, 28rem)',
+                              }}
                             >
                               <UniverseCard
                                 uni={uni}
