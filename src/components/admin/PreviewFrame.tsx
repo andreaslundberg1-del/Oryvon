@@ -318,9 +318,9 @@ export function PreviewFrame({ route, device, onScaleChange, previewData, explic
   return (
     <div 
       ref={containerRef}
-      className="relative w-full flex items-center justify-center overflow-hidden"
+      className="relative w-full flex items-center justify-center overflow-auto"
       style={{
-        height: `${viewportConfig.height * scale + 40}px`, // Fixed height based on scale
+        minHeight: `${viewportConfig.height * scale + 40}px`, // Extra space for scroll
       }}
     >
       {/* Device Frame with border and glow */}
@@ -333,7 +333,6 @@ export function PreviewFrame({ route, device, onScaleChange, previewData, explic
           transform: `scale(${scale})`,
           boxShadow: '0 0 40px rgba(245, 158, 11, 0.1), inset 0 0 60px rgba(0, 0, 0, 0.5)',
           cursor: device === 'desktop' ? 'default' : (isDragging ? 'grabbing' : 'grab'),
-          overflow: 'hidden', // Hide overflow on frame
         }}
         onWheel={handleWheel}
         onMouseDown={handleMouseDown}
@@ -354,8 +353,6 @@ export function PreviewFrame({ route, device, onScaleChange, previewData, explic
             width: `${viewportConfig.width}px`,
             height: `${viewportConfig.height}px`,
             overflow: 'auto',
-            overflowY: 'auto',
-            overflowX: 'hidden', // Hide horizontal scroll, content should fit
           }}
           title="Live Preview"
           sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-top-navigation"
