@@ -15,6 +15,7 @@ interface FloatingPreviewProps {
   previewData?: any;
   children?: React.ReactNode;
   useContext?: boolean; // New prop to enable context usage
+  localPreview?: boolean; // If true, render children directly instead of iframe
 }
 
 const SIZE_PRESETS = {
@@ -272,7 +273,7 @@ export function FloatingPreview({ route, device: propDevice = "desktop", preview
           {/* Preview Frame Container */}
           <div className="p-4 bg-black/20">
             <div
-              className="relative rounded-lg overflow-hidden flex items-center justify-center"
+              className="relative rounded-lg overflow-y-auto flex items-center justify-center"
               style={{
                 height: `${panelHeight - 100}px`, // Account for header and padding
                 background: 'linear-gradient(135deg, rgba(2,1,2,0.8) 0%, rgba(0,0,0,0.95) 100%)',

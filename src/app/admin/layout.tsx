@@ -45,13 +45,11 @@ export default function AdminLayout({
   
   // Admin state management
   const [adminState, setAdminState] = useState<AdminState | null>(null);
-  const [isDrafting, setIsDrafting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [isPublishing, setIsPublishing] = useState(false);
 
   useEffect(() => {
     const manager = getAdminStateManager();
-    
+
     // Subscribe to state changes
     const unsubscribe = manager.subscribe((state) => {
       setAdminState(state);
@@ -65,25 +63,11 @@ export default function AdminLayout({
     };
   }, []);
 
-  const handleDraft = async () => {
-    setIsDrafting(true);
-    const manager = getAdminStateManager();
-    await manager.draft();
-    setIsDrafting(false);
-  };
-
   const handleSave = async () => {
     setIsSaving(true);
     const manager = getAdminStateManager();
     const success = await manager.save();
     setIsSaving(false);
-  };
-
-  const handlePublish = async () => {
-    setIsPublishing(true);
-    const manager = getAdminStateManager();
-    const success = await manager.publish();
-    setIsPublishing(false);
   };
 
   const handleUndo = () => {
@@ -273,17 +257,12 @@ export default function AdminLayout({
       {/* Save System */}
       {adminState && (
         <SaveSystem
-          onDraft={handleDraft}
           onSave={handleSave}
-          onPublish={handlePublish}
           onUndo={handleUndo}
           onReset={handleReset}
           hasUnsavedChanges={adminState.hasUnsavedChanges}
-          isDrafting={isDrafting}
           isSaving={isSaving}
-          isPublishing={isPublishing}
           lastSaveTime={adminState.lastSaveTime}
-          lastPublishTime={adminState.lastPublishTime}
         />
       )}
     </div>

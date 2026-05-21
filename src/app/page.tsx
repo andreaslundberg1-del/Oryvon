@@ -1440,6 +1440,10 @@ export default function Home() {
   const [homepageSettings, setHomepageSettings] = useState<HomepageSettings>(DEFAULT_HOMEPAGE_SETTINGS);
   const [liveGenres, setLiveGenres] = useState<GenreDef[]>(GENRES);
   const [liveUniverses, setLiveUniverses] = useState<any[]>([]);
+  // Static logo symbol asset - never affected by admin edits
+  const staticLogoSymbolUrl = "/Images/oryndor_symbol.png";
+  // Track if static logo image loaded successfully
+  const [staticLogoLoaded, setStaticLogoLoaded] = useState(false);
 
   useEffect(() => {
     const loadCmsContent = async () => {
@@ -1536,28 +1540,42 @@ export default function Home() {
     const handleMessage = (event: MessageEvent) => {
       if (event.data?.type === "ORYVON_PREVIEW_UPDATE" && event.data.payload?.homepageSettings) {
         const draftSettings = event.data.payload.homepageSettings;
-        
+
         console.log("savedHomepage", homepageSettings);
         console.log("draftHomepage", draftSettings);
-        
+
         // Deep merge: only override fields that are present in draft
         setHomepageSettings(prev => {
-          const merged = {
-            ...prev, // Start with saved data
-            ...draftSettings, // Override with draft fields
-            // Preserve arrays if draft doesn't have them
-            portal_cards: draftSettings.portal_cards !== undefined ? draftSettings.portal_cards : prev.portal_cards,
-          };
-          
+          const merged = { ...prev };
+
+          // Only update fields that exist in draftSettings and are not undefined
+          Object.keys(draftSettings).forEach(key => {
+            if (draftSettings[key] !== undefined && draftSettings[key] !== null) {
+              merged[key as keyof typeof merged] = draftSettings[key];
+            }
+          });
+
+          // Explicitly preserve critical fields if not in draft or if empty string
+          if (draftSettings.portal_cards === undefined) {
+            merged.portal_cards = prev.portal_cards;
+          }
+          // Never accept empty hero_logo_url from preview - preserve previous value
+          if (draftSettings.hero_logo_url === undefined || draftSettings.hero_logo_url === "" || draftSettings.hero_logo_url === null) {
+            merged.hero_logo_url = prev.hero_logo_url;
+          }
+          if (draftSettings.background_image_url === undefined || draftSettings.background_image_url === "") {
+            merged.background_image_url = prev.background_image_url;
+          }
+
           console.log("mergedPreviewHomepage", merged);
           return merged;
         });
-        
+
         // Only update genres if portal cards are explicitly provided in draft
         if (draftSettings.portal_cards && draftSettings.portal_cards.length > 0) {
           const previewPortals = draftSettings.portal_cards;
           const portalSlugById = new Map<string, string>();
-          
+
           const mergedGenres = previewPortals.map((portal: any, index: number) => {
             const fallback = GENRES.find((g) => g.id === portal.id || g.id === portal.slug) || GENRES[index % GENRES.length];
             const portalSlug = portal.slug || fallback.id || portal.id;
@@ -1576,7 +1594,7 @@ export default function Home() {
               goldIcon: fallback.goldIcon,
             };
           });
-          
+
           setLiveGenres(mergedGenres);
         }
       }
@@ -2584,12 +2602,13 @@ export default function Home() {
                   className="mb-1 md:mb-2 relative z-20 pointer-events-auto transition-transform duration-700 hover:scale-[1.04]"
                   style={{ filter: "drop-shadow(0 0 70px rgba(255, 233, 163, 0.85)) drop-shadow(0 0 35px rgba(201, 147, 58, 0.7)) drop-shadow(0 4px 20px rgba(0,0,0,0.9))" }}
                 >
-                  {homepageSettings.hero_logo_url ? (
+                  {staticLogoLoaded ? (
                     <img
-                      src={homepageSettings.hero_logo_url}
-                      alt={homepageSettings.hero_text || "ORYVON"}
+                      src={staticLogoSymbolUrl}
+                      alt="ORYVON Symbol"
                       className="oryvon-logo-float pointer-events-auto object-contain"
                       style={{ width: 200, height: 200 }}
+                      onError={() => setStaticLogoLoaded(false)}
                     />
                   ) : (
                     <OryndorLogo 
@@ -2598,6 +2617,14 @@ export default function Home() {
                       className="oryvon-logo-float pointer-events-auto"
                     />
                   )}
+                  {/* Preload image to check if it exists */}
+                  <img
+                    src={staticLogoSymbolUrl}
+                    alt=""
+                    style={{ display: 'none' }}
+                    onLoad={() => setStaticLogoLoaded(true)}
+                    onError={() => setStaticLogoLoaded(false)}
+                  />
                 </div>
 
                 {/* Elegant Golden Serif Title O R Y V O N */}

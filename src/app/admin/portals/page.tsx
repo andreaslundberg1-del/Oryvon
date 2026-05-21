@@ -36,6 +36,9 @@ export default function PortalManager() {
 
   const handleContentChange = (contentConfig: PortalsConfig['content']) => {
     const manager = getAdminStateManager();
+    // Update local state immediately for live preview
+    setConfig(prev => ({ ...prev, content: contentConfig }));
+    // Also update admin state manager for persistence
     manager.updateSectionConfig('portals', (config) => ({
       ...config,
       content: contentConfig,
@@ -44,6 +47,9 @@ export default function PortalManager() {
 
   const handleDesignChange = (designConfig: PortalsConfig['design']) => {
     const manager = getAdminStateManager();
+    // Update local state immediately for live preview
+    setConfig(prev => ({ ...prev, design: designConfig }));
+    // Also update admin state manager for persistence
     manager.updateSectionConfig('portals', (config) => ({
       ...config,
       design: designConfig,
@@ -52,6 +58,9 @@ export default function PortalManager() {
 
   const handleLayoutChange = (layoutConfig: PortalsConfig['layout']) => {
     const manager = getAdminStateManager();
+    // Update local state immediately for live preview
+    setConfig(prev => ({ ...prev, layout: layoutConfig }));
+    // Also update admin state manager for persistence
     manager.updateSectionConfig('portals', (config) => ({
       ...config,
       layout: layoutConfig,
@@ -60,6 +69,9 @@ export default function PortalManager() {
 
   const handleAnimationChange = (animationConfig: PortalsConfig['animation']) => {
     const manager = getAdminStateManager();
+    // Update local state immediately for live preview
+    setConfig(prev => ({ ...prev, animation: animationConfig }));
+    // Also update admin state manager for persistence
     manager.updateSectionConfig('portals', (config) => ({
       ...config,
       animation: animationConfig,
