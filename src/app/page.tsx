@@ -1181,7 +1181,7 @@ function EraPortal({
         <div 
           className="absolute inset-0 z-5 mix-blend-screen pointer-events-none transition-all duration-700"
           style={{
-            background: `
+            backgroundImage: `
               linear-gradient(135deg, transparent 30%, ${g.color}18 45%, ${g.color}25 50%, ${g.color}18 55%, transparent 70%)
             `,
             backgroundSize: "200% 200%",
@@ -1195,7 +1195,7 @@ function EraPortal({
         <div 
           className="absolute inset-0 z-5 mix-blend-color-dodge pointer-events-none transition-all duration-700"
           style={{
-            background: `
+            backgroundImage: `
               linear-gradient(45deg, transparent 25%, ${g.color}12 45%, ${g.color}20 50%, ${g.color}12 55%, transparent 75%)
             `,
             backgroundSize: "200% 200%",
@@ -1209,7 +1209,7 @@ function EraPortal({
         <div
           className="absolute inset-x-0 top-0 h-2/3 z-5 pointer-events-none transition-opacity duration-700"
           style={{
-            background: `radial-gradient(circle at 50% 0%, rgba(238, 208, 120, 0.22) 0%, transparent 75%)`,
+            backgroundImage: `radial-gradient(circle at 50% 0%, rgba(238, 208, 120, 0.22) 0%, transparent 75%)`,
             opacity: hovered ? 1 : 0.45,
           }}
         />
