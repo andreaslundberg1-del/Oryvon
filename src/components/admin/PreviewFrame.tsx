@@ -29,7 +29,7 @@ export function PreviewFrame({ route, device, onScaleChange, previewData, explic
   const getViewportConfig = () => {
     switch (device) {
       case "desktop": 
-        return { width: 1920, height: 1080, frameClass: "rounded-lg" }; // Standard desktop resolution
+        return { width: 1440, height: 1080, frameClass: "rounded-lg" }; // Standard desktop resolution
       case "tablet": 
         return { width: 768, height: 1024, frameClass: "rounded-2xl" }; // Standard tablet resolution
       case "mobile": 
@@ -323,7 +323,7 @@ export function PreviewFrame({ route, device, onScaleChange, previewData, explic
         minHeight: `${viewportConfig.height * scale + 40}px`, // Extra space for scroll
       }}
     >
-      {/* Outer scaled wrapper - applies the transform scale */}
+      {/* Scale wrapper - handles zoom/scale only */}
       <div
         className="relative"
         style={{
@@ -333,7 +333,7 @@ export function PreviewFrame({ route, device, onScaleChange, previewData, explic
           transform: `scale(${scale})`,
         }}
       >
-        {/* Inner fixed-size viewport - maintains actual dimensions for scroll */}
+        {/* Inner viewport - fixed device size */}
         <div
           className={`relative bg-black shadow-[0_0_60px_rgba(0,0,0,0.8)] border border-white/10 ${viewportConfig.frameClass}`}
           style={{
@@ -341,7 +341,7 @@ export function PreviewFrame({ route, device, onScaleChange, previewData, explic
             height: `${viewportConfig.height}px`,
             boxShadow: '0 0 40px rgba(245, 158, 11, 0.1), inset 0 0 60px rgba(0, 0, 0, 0.5)',
             cursor: device === 'desktop' ? 'default' : (isDragging ? 'grabbing' : 'grab'),
-            overflow: 'hidden', // Hide overflow on viewport, iframe handles scroll
+            overflow: 'hidden', // Hide overflow on viewport
           }}
           onWheel={handleWheel}
           onMouseDown={handleMouseDown}
@@ -352,22 +352,30 @@ export function PreviewFrame({ route, device, onScaleChange, previewData, explic
           {/* Device frame glow effect */}
           <div className="absolute inset-0 pointer-events-none rounded-inherit bg-gradient-to-b from-white/5 to-transparent" />
           
-          {/* Iframe with explicit viewport width and scrolling enabled */}
-          <iframe
-            ref={iframeRef}
-            src={previewUrl}
-            className="w-full h-full border-0 rounded-inherit"
+          {/* Scroll container - inside viewport only */}
+          <div
+            className="w-full h-full overflow-auto"
             style={{
-              backgroundColor: '#020102',
               width: `${viewportConfig.width}px`,
               height: `${viewportConfig.height}px`,
-              overflow: 'auto',
             }}
-            title="Live Preview"
-            sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-top-navigation"
-            scrolling="yes"
-            onLoad={handleIframeLoad}
-          />
+          >
+            {/* Iframe - page content */}
+            <iframe
+              ref={iframeRef}
+              src={previewUrl}
+              className="w-full h-full border-0"
+              style={{
+                backgroundColor: '#020102',
+                width: `${viewportConfig.width}px`,
+                height: `${viewportConfig.height}px`,
+              }}
+              title="Live Preview"
+              sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-top-navigation"
+              scrolling="yes"
+              onLoad={handleIframeLoad}
+            />
+          </div>
         </div>
       </div>
     </div>
