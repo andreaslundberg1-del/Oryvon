@@ -1869,12 +1869,12 @@ export default function Home() {
 
   return (
     <div 
-      className={`w-full ${selectedGenre ? "min-h-screen" : "h-screen max-h-screen overflow-hidden"} bg-[#020101] text-white`}
+      className="w-full min-h-screen bg-[#020101] text-white"
       style={previewWidth ? { width: `${previewWidth}px`, margin: "0 auto" } : undefined}
     >
       <main
         ref={mainRef}
-        className={`w-full ${selectedGenre ? "min-h-screen" : "h-screen max-h-screen overflow-hidden"} flex flex-col items-center justify-start relative bg-[#020101] select-none`}
+        className="w-full min-h-screen flex flex-col items-center justify-start relative bg-[#020101] select-none"
       >
         {/* Background canvas layers (WebGL stars, nebula mist, and colossal 3D orbit rings) */}
         <div className="fixed inset-0 z-0 pointer-events-none oryvon-bg-root">
