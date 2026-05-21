@@ -323,42 +323,52 @@ export function PreviewFrame({ route, device, onScaleChange, previewData, explic
         minHeight: `${viewportConfig.height * scale + 40}px`, // Extra space for scroll
       }}
     >
-      {/* Device Frame with border and glow */}
+      {/* Outer scaled wrapper - applies the transform scale */}
       <div
-        className={`relative bg-black shadow-[0_0_60px_rgba(0,0,0,0.8)] border border-white/10 ${viewportConfig.frameClass}`}
+        className="relative"
         style={{
           width: `${viewportConfig.width}px`,
           height: `${viewportConfig.height}px`,
           transformOrigin: 'center',
           transform: `scale(${scale})`,
-          boxShadow: '0 0 40px rgba(245, 158, 11, 0.1), inset 0 0 60px rgba(0, 0, 0, 0.5)',
-          cursor: device === 'desktop' ? 'default' : (isDragging ? 'grabbing' : 'grab'),
         }}
-        onWheel={handleWheel}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseLeave}
       >
-        {/* Device frame glow effect */}
-        <div className="absolute inset-0 pointer-events-none rounded-inherit bg-gradient-to-b from-white/5 to-transparent" />
-        
-        {/* Iframe with explicit viewport width and scrolling enabled */}
-        <iframe
-          ref={iframeRef}
-          src={previewUrl}
-          className="w-full h-full border-0 rounded-inherit"
+        {/* Inner fixed-size viewport - maintains actual dimensions for scroll */}
+        <div
+          className={`relative bg-black shadow-[0_0_60px_rgba(0,0,0,0.8)] border border-white/10 ${viewportConfig.frameClass}`}
           style={{
-            backgroundColor: '#020102',
             width: `${viewportConfig.width}px`,
             height: `${viewportConfig.height}px`,
-            overflow: 'auto',
+            boxShadow: '0 0 40px rgba(245, 158, 11, 0.1), inset 0 0 60px rgba(0, 0, 0, 0.5)',
+            cursor: device === 'desktop' ? 'default' : (isDragging ? 'grabbing' : 'grab'),
+            overflow: 'hidden', // Hide overflow on viewport, iframe handles scroll
           }}
-          title="Live Preview"
-          sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-top-navigation"
-          scrolling="yes"
-          onLoad={handleIframeLoad}
-        />
+          onWheel={handleWheel}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseLeave}
+        >
+          {/* Device frame glow effect */}
+          <div className="absolute inset-0 pointer-events-none rounded-inherit bg-gradient-to-b from-white/5 to-transparent" />
+          
+          {/* Iframe with explicit viewport width and scrolling enabled */}
+          <iframe
+            ref={iframeRef}
+            src={previewUrl}
+            className="w-full h-full border-0 rounded-inherit"
+            style={{
+              backgroundColor: '#020102',
+              width: `${viewportConfig.width}px`,
+              height: `${viewportConfig.height}px`,
+              overflow: 'auto',
+            }}
+            title="Live Preview"
+            sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-top-navigation"
+            scrolling="yes"
+            onLoad={handleIframeLoad}
+          />
+        </div>
       </div>
     </div>
   );
