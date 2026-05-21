@@ -38,9 +38,24 @@ export function PreviewFrame({ route, device, onScaleChange, previewData, explic
   };
 
   const viewportConfig = getViewportConfig();
-  
-  // Build URL with viewport width query parameter
-  const previewUrl = `${route}?previewWidth=${viewportConfig.width}`;
+
+  // Build absolute URL for preview iframe
+  // Use NEXT_PUBLIC_SITE_URL if available, otherwise fallback to window.location.origin
+  const getBaseUrl = () => {
+    // Try environment variable first (for production)
+    if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_SITE_URL) {
+      return process.env.NEXT_PUBLIC_SITE_URL;
+    }
+    // Fallback to current origin (for local development)
+    if (typeof window !== 'undefined') {
+      return window.location.origin;
+    }
+    // Last resort for SSR
+    return 'http://localhost:3000';
+  };
+
+  const baseUrl = getBaseUrl();
+  const previewUrl = `${baseUrl}${route.startsWith('/') ? route : '/' + route}?previewWidth=${viewportConfig.width}`;
 
   // Calculate scale based on container dimensions to fit entire viewport
   useEffect(() => {

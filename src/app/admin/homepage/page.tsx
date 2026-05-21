@@ -141,7 +141,7 @@ export default function HomepageEditor() {
       </div>
 
       {/* Floating Preview */}
-      <FloatingPreview route="/" previewData={{ homepageConfig: config }} />
+      <FloatingPreview route="/" previewData={{ homepageSettings: config }} />
     </>
   );
 }

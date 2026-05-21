@@ -1443,16 +1443,26 @@ export default function Home() {
 
   useEffect(() => {
     const loadCmsContent = async () => {
-      const [homepageRes, portalsRes, universesRes] = await Promise.all([
-        supabase.from("homepage_settings").select("*").eq("id", "homepage").maybeSingle(),
-        supabase.from("portals").select("*").eq("visibility", true).order("sort_order", { ascending: true }),
-        supabase
-          .from("universes")
-          .select("id,title,description,rating,release_years,category_tags,backdrop,poster_image,accent_color,button_text,slug,status,featured_hero,universe_type,portal_id,tags,translations,sort_order")
-          .neq("status", "hidden")
-          .neq("status", "draft")
-          .order("sort_order", { ascending: true }),
-      ]);
+      // Check if Supabase is configured
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+      if (!supabaseUrl || !supabaseAnonKey) {
+        console.log('Supabase not configured, using default data');
+        return;
+      }
+
+      try {
+        const [homepageRes, portalsRes, universesRes] = await Promise.all([
+          supabase.from("homepage_settings").select("*").eq("id", "homepage").maybeSingle(),
+          supabase.from("portals").select("*").eq("visibility", true).order("sort_order", { ascending: true }),
+          supabase
+            .from("universes")
+            .select("id,title,description,rating,release_years,category_tags,backdrop,poster_image,accent_color,button_text,slug,status,featured_hero,universe_type,portal_id,tags,translations,sort_order")
+            .neq("status", "hidden")
+            .neq("status", "draft")
+            .order("sort_order", { ascending: true }),
+        ]);
 
       if (homepageRes.data) {
         setHomepageSettings({
@@ -1509,6 +1519,11 @@ export default function Home() {
         const fallbackUniverses = UNIVERSES.filter((u) => !cmsUniverseKeys.has(String(u.id || u.title).toLowerCase()));
         setLiveUniverses([...cmsUniverses, ...fallbackUniverses]);
       } else {
+        setLiveUniverses(UNIVERSES);
+      }
+      } catch (error) {
+        console.error('Error loading CMS content:', error);
+        // Use default data on error
         setLiveUniverses(UNIVERSES);
       }
     };
