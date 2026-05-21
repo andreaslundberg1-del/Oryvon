@@ -206,13 +206,12 @@ export function PreviewFrame({ route, device, onScaleChange, previewData, explic
 
   // Handle mouse wheel scrolling inside iframe
   const handleWheel = (e: React.WheelEvent) => {
-    e.preventDefault();
+    // Allow iframe to handle scrolling naturally, don't prevent default
+    // Only prevent propagation to parent container
     e.stopPropagation();
     
-    if (iframeRef.current?.contentWindow) {
-      const iframeWindow = iframeRef.current.contentWindow;
-      iframeWindow.scrollBy(0, e.deltaY);
-    }
+    // Let the iframe handle its own scrolling via native browser behavior
+    // Don't manually scroll - let the iframe's native scrolling work
   };
 
   // Handle drag start for touch-like scrolling
@@ -319,9 +318,10 @@ export function PreviewFrame({ route, device, onScaleChange, previewData, explic
   return (
     <div 
       ref={containerRef}
-      className="relative w-full flex items-center justify-center overflow-auto"
+      className="relative w-full flex items-center justify-center"
       style={{
         minHeight: `${viewportConfig.height * scale + 40}px`, // Extra space for scroll
+        overflow: 'hidden', // Hide overflow on container, let iframe handle it
       }}
     >
       {/* Device Frame with border and glow */}
@@ -334,6 +334,7 @@ export function PreviewFrame({ route, device, onScaleChange, previewData, explic
           transform: `scale(${scale})`,
           boxShadow: '0 0 40px rgba(245, 158, 11, 0.1), inset 0 0 60px rgba(0, 0, 0, 0.5)',
           cursor: device === 'desktop' ? 'default' : (isDragging ? 'grabbing' : 'grab'),
+          overflow: 'hidden', // Hide overflow on frame, let iframe handle it
         }}
         onWheel={handleWheel}
         onMouseDown={handleMouseDown}
@@ -354,9 +355,11 @@ export function PreviewFrame({ route, device, onScaleChange, previewData, explic
             width: `${viewportConfig.width}px`,
             height: `${viewportConfig.height}px`,
             overflow: 'auto',
+            overflowY: 'auto',
+            overflowX: 'auto',
           }}
           title="Live Preview"
-          sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
+          sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-top-navigation"
           scrolling="yes"
           onLoad={handleIframeLoad}
         />
