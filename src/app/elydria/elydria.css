@@ -1,0 +1,481 @@
+/* ==========================================================================
+   ELYDRIA CINEMATIC DEEP DESIGN SYSTEM (React/Next.js)
+   ========================================================================== */
+
+:root {
+    --pure-emerald: #10b981;
+    --pure-emerald-glow: rgba(16, 185, 129, 0.4);
+    --pure-gold: #ffd700;
+    --pure-gold-glow: rgba(255, 215, 0, 0.4);
+    
+    --corrupt-violet: #8b5cf6;
+    --corrupt-violet-glow: rgba(139, 92, 246, 0.4);
+    --corrupt-crimson: #ef4444;
+    
+    --font-fantasy: 'Cinzel', 'MedievalSharp', serif;
+    --font-dialogue: 'IM Fell English', Georgia, serif;
+    --font-ui: 'Montserrat', 'Inter', sans-serif;
+    
+    --transition-speed: 0.4s;
+}
+
+/* Base Body Styles applied inside Elydria container */
+.elydria-app {
+    background-color: #050706;
+    color: #f1f5f9;
+    font-family: var(--font-ui);
+    position: relative;
+    min-height: 100vh;
+    overflow-x: hidden;
+    transition: background-color 1s ease;
+}
+
+.elydria-app.state-corrupted {
+    background-color: #0b060d;
+}
+
+/* CRT Overlay Vignette */
+.crt-vignette {
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(circle, transparent 40%, rgba(0, 0, 0, 0.7) 100%);
+    pointer-events: none;
+    z-index: 99;
+}
+
+/* Cinematic Black Letterbox Borders */
+.cinematic-letterbox {
+    position: fixed;
+    left: 0;
+    right: 0;
+    height: 4vh;
+    background: #000;
+    z-index: 100;
+    pointer-events: none;
+    transition: all 0.5s ease;
+}
+.cinematic-letterbox.top { top: 0; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+.cinematic-letterbox.bottom { bottom: 0; border-top: 1px solid rgba(255, 255, 255, 0.05); }
+
+/* Playable container centering */
+.game-viewport {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 20px;
+    position: relative;
+    z-index: 10;
+}
+
+/* Custom premium slate panel with gold-accent border */
+.fantasy-panel {
+    background: rgba(10, 12, 11, 0.85);
+    border: 2px solid #231c15;
+    border-radius: 8px;
+    box-shadow: 
+        0 10px 30px rgba(0, 0, 0, 0.7),
+        inset 0 0 20px rgba(255, 215, 0, 0.03);
+    position: relative;
+    transition: all var(--transition-speed) ease;
+}
+
+.elydria-app.state-corrupted .fantasy-panel {
+    background: rgba(13, 8, 16, 0.85);
+    border-color: #211328;
+    box-shadow: 
+        0 10px 30px rgba(0, 0, 0, 0.8),
+        inset 0 0 20px rgba(139, 92, 246, 0.03);
+}
+
+/* Ornate golden border corner flourishes */
+.fantasy-panel::before {
+    content: '';
+    position: absolute;
+    top: 3px; left: 3px; right: 3px; bottom: 3px;
+    border: 1px solid rgba(255, 215, 0, 0.08);
+    pointer-events: none;
+    border-radius: 6px;
+    transition: border-color var(--transition-speed) ease;
+}
+
+.elydria-app.state-corrupted .fantasy-panel::before {
+    border-color: rgba(139, 92, 246, 0.08);
+}
+
+/* TOP HUD GRID styling */
+.hud-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.5fr 1fr;
+    gap: 20px;
+    align-items: center;
+    padding: 15px 25px;
+    margin-bottom: 20px;
+}
+
+@media (max-width: 900px) {
+    .hud-grid {
+        grid-template-columns: 1fr;
+        text-align: center;
+        gap: 15px;
+    }
+}
+
+/* Progress Balance bar between Harmony & Corruption */
+.balance-track {
+    width: 100%;
+    height: 10px;
+    background: rgba(0, 0, 0, 0.6);
+    border-radius: 5px;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+}
+
+.balance-fill-pure {
+    height: 100%;
+    background: linear-gradient(to left, var(--pure-emerald), #047857);
+    box-shadow: 0 0 10px var(--pure-emerald-glow);
+    transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.balance-fill-corrupt {
+    height: 100%;
+    background: linear-gradient(to right, var(--corrupt-violet), #4c1d95);
+    box-shadow: 0 0 10px var(--corrupt-violet-glow);
+    transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ==========================================================================
+   SIDEBAR TABS & DETAILS
+   ========================================================================== */
+.sidebar-nav-tabs {
+    display: flex;
+    width: 100%;
+    gap: 6px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    margin-bottom: 15px;
+}
+
+.sidebar-tab-btn {
+    flex: 1;
+    font-family: var(--font-fantasy);
+    font-size: 0.8rem;
+    padding: 8px 4px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #94a3b8;
+    border-radius: 4px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: all 0.3s ease;
+}
+
+.sidebar-tab-btn:hover, .sidebar-tab-btn.active {
+    color: #ffd700;
+    border-color: #ffd700;
+    background: rgba(16, 185, 129, 0.06);
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.12);
+}
+
+.elydria-app.state-corrupted .sidebar-tab-btn:hover,
+.elydria-app.state-corrupted .sidebar-tab-btn.active {
+    color: var(--corrupt-violet);
+    border-color: var(--corrupt-violet);
+    background: rgba(139, 92, 246, 0.06);
+    box-shadow: 0 0 10px rgba(139, 92, 246, 0.12);
+}
+
+/* Character Sheet Avatar */
+.druid-avatar-circle {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    border: 2px solid #ffd700;
+    margin: 0 auto 15px auto;
+    background-size: cover;
+    background-position: center;
+    position: relative;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
+    transition: all 0.5s ease;
+}
+
+.elydria-app.state-corrupted .druid-avatar-circle {
+    border-color: var(--corrupt-violet);
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.2);
+}
+
+.stat-metric-card {
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    padding: 10px;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.stat-metric-card:hover {
+    border-color: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+/* Reliquary grid slots */
+.reliquary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+}
+
+.reliquary-slot {
+    aspect-ratio: 1;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.reliquary-slot:hover {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: #ffd700;
+    box-shadow: 0 0 8px rgba(255, 215, 0, 0.15);
+}
+
+.reliquary-slot.active-item {
+    border-color: #ffd700 !important;
+    background: rgba(16, 185, 129, 0.08);
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.3) !important;
+}
+
+/* ==========================================================================
+   INTERACTIVE MAP & SVGS
+   ========================================================================== */
+.map-canvas-container {
+    width: 100%;
+    position: relative;
+    background: radial-gradient(circle, #0e1411 0%, #030604 100%);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: inset 0 0 40px rgba(0,0,0,0.8);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.elydria-app.state-corrupted .map-canvas-container {
+    background: radial-gradient(circle, #1a0b18 0%, #050207 100%);
+}
+
+.map-path-region {
+    fill: rgba(255, 255, 255, 0.01);
+    stroke: rgba(255, 215, 0, 0.08);
+    stroke-width: 2.5;
+    stroke-dasharray: 6 4;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.map-path-region:hover {
+    fill: rgba(16, 185, 129, 0.1);
+    stroke: var(--pure-emerald);
+    stroke-dasharray: none;
+    filter: drop-shadow(0 0 8px var(--pure-emerald-glow));
+}
+
+.map-path-region.corrupted {
+    stroke: rgba(239, 68, 68, 0.2) !important;
+}
+
+.map-path-region.corrupted:hover {
+    fill: rgba(239, 68, 68, 0.1);
+    stroke: var(--corrupt-crimson) !important;
+    filter: drop-shadow(0 0 8px rgba(239, 68, 68, 0.3));
+}
+
+.elydria-app.state-corrupted .map-path-region {
+    stroke: rgba(139, 92, 246, 0.1);
+}
+
+.elydria-app.state-corrupted .map-path-region:hover {
+    fill: rgba(139, 92, 246, 0.1);
+    stroke: var(--corrupt-violet);
+    filter: drop-shadow(0 0 8px var(--corrupt-violet-glow));
+}
+
+/* Floating labels */
+.floating-map-label {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 4px;
+    padding: 6px 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    pointer-events: none;
+    z-index: 20;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.floating-map-label.highlighted {
+    transform: translate(-50%, -55%) scale(1.08);
+    border-color: #ffd700;
+    box-shadow: 0 6px 15px rgba(255, 215, 0, 0.2);
+}
+
+.elydria-app.state-corrupted .floating-map-label.highlighted {
+    border-color: var(--corrupt-violet);
+    box-shadow: 0 6px 15px rgba(139, 92, 246, 0.2);
+}
+
+/* ==========================================================================
+   RUNIC SKILLS & GROWTH TREE
+   ========================================================================== */
+.runic-skill-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px dashed rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 20px 10px;
+    min-height: 380px;
+    position: relative;
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+}
+
+.runic-node-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.7);
+    border: 2px solid rgba(255, 255, 255, 0.12);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.3rem;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+}
+
+.runic-node-btn:hover {
+    transform: scale(1.12);
+    border-color: #ffd700;
+    box-shadow: 0 0 12px rgba(255, 215, 0, 0.4);
+}
+
+.runic-node-btn.core {
+    border-color: #ffd700;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+    background: radial-gradient(circle, #0e7490 0%, #083344 100%);
+    width: 52px;
+    height: 52px;
+    font-size: 1.6rem;
+    cursor: default;
+}
+
+.runic-node-btn.purity.unlocked {
+    border-color: var(--pure-emerald) !important;
+    background: radial-gradient(circle, #10b981 0%, #064e3b 100%) !important;
+    box-shadow: 0 0 15px var(--pure-emerald-glow) !important;
+}
+
+.runic-node-btn.shadow.unlocked {
+    border-color: var(--corrupt-violet) !important;
+    background: radial-gradient(circle, #8b5cf6 0%, #1e1b4b 100%) !important;
+    box-shadow: 0 0 15px var(--corrupt-violet-glow) !important;
+}
+
+/* Tooltips */
+.runic-tooltip-box {
+    visibility: hidden;
+    width: 170px;
+    background-color: rgba(8, 8, 10, 0.98);
+    color: #f1f5f9;
+    text-align: center;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 6px;
+    padding: 8px 10px;
+    position: absolute;
+    z-index: 100;
+    bottom: 120%;
+    left: 50%;
+    transform: translateX(-50%);
+    opacity: 0;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    font-size: 0.7rem;
+    line-height: 1.35;
+    pointer-events: none;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.8);
+}
+
+.runic-node-btn:hover .runic-tooltip-box {
+    visibility: visible;
+    opacity: 1;
+    transform: translateX(-50%) translateY(-3px);
+}
+
+/* ==========================================================================
+   SCROLL LORE BOOK STYLE
+   ========================================================================== */
+.lore-book-viewport {
+    background: radial-gradient(circle, #0e100f 0%, #030403 100%);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 100px 20px;
+    position: relative;
+}
+
+.elydria-app.state-corrupted .lore-book-viewport {
+    background: radial-gradient(circle, #150914 0%, #040206 100%);
+}
+
+.lore-paragraph {
+    font-family: var(--font-dialogue);
+    font-size: 1.6rem;
+    line-height: 1.8;
+    color: #cbd5e1;
+    text-align: justify;
+    max-width: 800px;
+    margin: 0 auto 50px auto;
+    opacity: 0.85;
+    transition: opacity 0.5s ease;
+}
+
+.lore-section-title {
+    font-family: var(--font-fantasy);
+    letter-spacing: 5px;
+    text-transform: uppercase;
+    text-shadow: 0 0 15px rgba(255, 255, 255, 0.15);
+}
+
+/* CRT Scanlines overlay */
+.scanlines-overlay {
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+    background-size: 100% 4px;
+    z-index: 98;
+    pointer-events: none;
+    opacity: 0.45;
+}
+
+/* Screen rumble animation */
+@keyframes shakeScreen {
+    0%, 100% { transform: translate(0, 0) rotate(0deg); }
+    10% { transform: translate(-3px, 2px) rotate(-1deg); }
+    30% { transform: translate(3px, -1px) rotate(1deg); }
+    50% { transform: translate(-2px, -2px) rotate(0deg); }
+    70% { transform: translate(2px, 3px) rotate(1deg); }
+    90% { transform: translate(-1px, 2px) rotate(-1deg); }
+}
+
+.shake-active {
+    animation: shakeScreen 0.35s ease-in-out;
+}

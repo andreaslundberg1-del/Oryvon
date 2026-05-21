@@ -1,0 +1,309 @@
+@import "tailwindcss";
+
+:root {
+  --background: #000000;
+  --foreground: #ffffff;
+  --oryvon-scroll-y: 0;
+  
+  /* Dynamic Era Variables - these will be animated by GSAP */
+  --era-primary: #ffffff;
+  --era-secondary: #888888;
+  --era-bg: #000000;
+  --era-text: #ffffff;
+  
+  /* Lenis default fix */
+  --lenis-scroll-container: #000000;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-future: var(--font-future);
+  --font-arcade: var(--font-arcade);
+}
+
+@media (pointer: fine) {
+  *, *::before, *::after {
+    cursor: none !important;
+  }
+}
+
+html.lenis, html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+.lenis.lenis-smooth iframe {
+  pointer-events: none;
+}
+
+body {
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  background-color: var(--era-bg);
+  color: var(--era-text);
+  transition: background-color 0.5s ease, color 0.5s ease;
+}
+
+/* Hide scrollbar for immersive feel */
+::-webkit-scrollbar {
+  display: none;
+}
+* {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.pixelated {
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
+/* Cinematic CRT Screen Effect */
+.crt-screen {
+  position: relative;
+  overflow: hidden;
+}
+.crt-screen::before {
+  content: " ";
+  display: block;
+  position: absolute;
+  top: 0; left: 0; bottom: 0; right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+  z-index: 2;
+  background-size: 100% 2px, 3px 100%;
+  pointer-events: none;
+}
+.crt-screen::after {
+  content: " ";
+  display: block;
+  position: absolute;
+  top: 0; left: 0; bottom: 0; right: 0;
+  background: rgba(18, 16, 16, 0.05);
+  opacity: 0;
+  z-index: 2;
+  pointer-events: none;
+  animation: flicker 0.15s infinite;
+}
+
+/* Hologram Cinematic Effect */
+.hologram-effect {
+  position: relative;
+}
+.hologram-effect::before {
+  content: "";
+  position: absolute;
+  inset: -20px;
+  background: linear-gradient(0deg, transparent, rgba(34, 211, 238, 0.1), transparent);
+  animation: hologram-scan 4s linear infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes flicker {
+  0% { opacity: 0.1; }
+  5% { opacity: 0.2; }
+  10% { opacity: 0.1; }
+  15% { opacity: 0.3; }
+  20% { opacity: 0.1; }
+  25% { opacity: 0.2; }
+  30% { opacity: 0.4; }
+  100% { opacity: 0.1; }
+}
+
+@keyframes hologram-scan {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.momentum-scroll {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+.bg-gradient-radial {
+  background-image: radial-gradient(var(--tw-gradient-stops));
+}
+
+/* ===== CINEMATIC ENHANCEMENTS ===== */
+
+/* Stable cinematic layers — GPU composited, no stepped grain flicker */
+.oryvon-gpu-layer {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  contain: layout style paint;
+  isolation: isolate;
+}
+
+.oryvon-bg-root {
+  background-color: #020101;
+  isolation: isolate;
+}
+
+.oryvon-spin-slow {
+  animation: oryvon-spin 200s linear infinite;
+}
+
+.oryvon-spin-reverse {
+  animation: oryvon-spin 140s linear infinite reverse;
+}
+
+.oryvon-spin-mid {
+  animation: oryvon-spin 90s linear infinite;
+}
+
+@keyframes oryvon-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.oryvon-nebula-drift {
+  animation: oryvon-nebula-opacity 24s ease-in-out infinite alternate;
+}
+
+@keyframes oryvon-nebula-opacity {
+  from { opacity: 0.14; }
+  to { opacity: 0.22; }
+}
+
+.oryvon-mist-drift {
+  animation: oryvon-mist-slide 48s ease-in-out infinite alternate;
+}
+
+@keyframes oryvon-mist-slide {
+  from { transform: translate3d(-2%, 0, 0); }
+  to { transform: translate3d(2%, 0, 0); }
+}
+
+/* Homepage scroll parallax via CSS vars (no React re-render) */
+.hero-scroll-fade {
+  opacity: clamp(0.15, calc(1 - var(--oryvon-scroll-y) * 0.002), 1);
+  transition: opacity 0.35s ease-out;
+}
+
+.hero-scroll-parallax {
+  opacity: clamp(0, calc(1 - var(--oryvon-scroll-y) * 0.0022), 1);
+  transform: translate3d(0, calc(var(--oryvon-scroll-y) * -0.22px), 0)
+    scale(clamp(0.72, calc(1 - var(--oryvon-scroll-y) * 0.0006), 1));
+}
+
+.portal-scroll-reveal {
+  opacity: clamp(0, calc((var(--oryvon-scroll-y) - 100px) * 0.0035), 1);
+  transform: translate3d(0, clamp(0px, calc(100px - var(--oryvon-scroll-y) * 0.35px), 100px), 0);
+}
+
+.god-ray-stable {
+  animation: god-ray-breathe 14s ease-in-out infinite alternate;
+}
+
+@keyframes god-ray-breathe {
+  from { opacity: 0.4; transform: translateX(-50%) scaleX(0.98); }
+  to { opacity: 0.58; transform: translateX(-50%) scaleX(1.02); }
+}
+
+.noise-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9990;
+  pointer-events: none;
+  opacity: 0.022;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
+}
+
+.scanline-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9991;
+  pointer-events: none;
+  opacity: 0.012;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 4px,
+    rgba(0,0,0,0.015) 4px,
+    rgba(0,0,0,0.015) 5px
+  );
+}
+
+.oryvon-compass-float {
+  animation: oryvon-compass-float 8s ease-in-out infinite alternate;
+  filter: drop-shadow(0 0 28px rgba(201, 147, 58, 0.28));
+}
+
+@keyframes oryvon-compass-float {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(0, -8px, 0); }
+}
+
+.oryvon-descend-hint {
+  animation: oryvon-descend-hint 2.8s ease-in-out infinite;
+}
+
+@keyframes oryvon-descend-hint {
+  0%, 100% { transform: translate3d(0, 0, 0); opacity: 0.55; }
+  50% { transform: translate3d(0, 6px, 0); opacity: 0.85; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .oryvon-spin-slow,
+  .oryvon-spin-reverse,
+  .oryvon-spin-mid,
+  .oryvon-nebula-drift,
+  .oryvon-mist-drift,
+  .god-ray-stable {
+    animation: none !important;
+  }
+  .hero-scroll-parallax,
+  .portal-scroll-reveal {
+    transform: none !important;
+  }
+}
+
+@keyframes nav-glow-pulse {
+  0%,100% { text-shadow: 0 0 8px rgba(34,211,238,0.25), 0 0 24px rgba(34,211,238,0.08); }
+  50%     { text-shadow: 0 0 18px rgba(34,211,238,0.6), 0 0 50px rgba(34,211,238,0.25); }
+}
+.nav-logo-glow { animation: nav-glow-pulse 3.5s ease-in-out infinite; }
+
+@keyframes blink-cursor {
+  0%,100% { opacity: 1; }
+  50%     { opacity: 0; }
+}
+.cursor-blink {
+  animation: blink-cursor 0.8s step-end infinite;
+  color: rgba(34,211,238,0.8);
+}
+
+@keyframes marquee-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.marquee-track {
+  display: inline-flex;
+  white-space: nowrap;
+  animation: marquee-scroll 28s linear infinite;
+}
+.marquee-track:hover { animation-play-state: paused; }

@@ -1,0 +1,254 @@
+/* ── Custom Cursor Styles ── */
+
+/* Hide default cursor when custom cursor is active */
+body.cursor-custom {
+  cursor: none !important;
+}
+
+/* ── Custom Cursor Element ── */
+.oryvon-cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 20px;
+  height: 20px;
+  pointer-events: none;
+  z-index: 99999;
+  mix-blend-mode: difference;
+  transition: transform 0.1s ease-out, opacity 0.2s ease;
+  will-change: transform;
+}
+
+/* ── Default Oryvon Cursor ── */
+body[data-cursor-theme="default"] .oryvon-cursor {
+  width: 12px;
+  height: 12px;
+  background: rgba(245, 158, 11, 0.9);
+  border-radius: 50%;
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.8), 0 0 30px rgba(245, 158, 11, 0.4);
+}
+
+/* ── Minimal Gold Dot ── */
+body[data-cursor-theme="minimal-gold-dot"] .oryvon-cursor {
+  width: 8px;
+  height: 8px;
+  background: #f59e0b;
+  border-radius: 50%;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.6);
+}
+
+/* ── Sci-Fi Ring Cursor ── */
+body[data-cursor-theme="sci-fi-ring"] .oryvon-cursor {
+  width: 24px;
+  height: 24px;
+  border: 2px solid rgba(245, 158, 11, 0.8);
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.5), inset 0 0 10px rgba(245, 158, 11, 0.2);
+}
+
+body[data-cursor-theme="sci-fi-ring"] .oryvon-cursor::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  background: rgba(245, 158, 11, 0.9);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* ── Hollow Circle Cursor ── */
+body[data-cursor-theme="hollow-circle"] .oryvon-cursor {
+  width: 20px;
+  height: 20px;
+  border: 1.5px solid rgba(245, 158, 11, 0.7);
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.3);
+}
+
+/* ── Energy Pulse Cursor ── */
+body[data-cursor-theme="energy-pulse"] .oryvon-cursor {
+  width: 14px;
+  height: 14px;
+  background: rgba(245, 158, 11, 0.8);
+  border-radius: 50%;
+  animation: energy-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes energy-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 15px rgba(245, 158, 11, 0.6);
+  }
+  50% {
+    transform: scale(1.3);
+    box-shadow: 0 0 25px rgba(245, 158, 11, 0.9);
+  }
+}
+
+/* ── Mythic Rune Cursor ── */
+body[data-cursor-theme="mythic-rune"] .oryvon-cursor {
+  width: 18px;
+  height: 18px;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.8), rgba(180, 120, 20, 0.6));
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.6);
+}
+
+/* ── Cyber Cursor ── */
+body[data-cursor-theme="cyber"] .oryvon-cursor {
+  width: 16px;
+  height: 16px;
+  background: rgba(245, 158, 11, 0.9);
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.7);
+  animation: cyber-rotate 3s linear infinite;
+}
+
+@keyframes cyber-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ── Elegant Thin Cursor ── */
+body[data-cursor-theme="elegant-thin"] .oryvon-cursor {
+  width: 16px;
+  height: 16px;
+  border: 1px solid rgba(245, 158, 11, 0.8);
+  border-radius: 2px;
+  background: transparent;
+  transform: rotate(45deg);
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
+}
+
+/* ── Glow Trail Cursor ── */
+body[data-cursor-theme="glow-trail"] .oryvon-cursor {
+  width: 12px;
+  height: 12px;
+  background: rgba(245, 158, 11, 0.9);
+  border-radius: 50%;
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.8), 0 0 40px rgba(245, 158, 11, 0.4), 0 0 60px rgba(245, 158, 11, 0.2);
+}
+
+/* ── Orbit Cursor ── */
+body[data-cursor-theme="orbit"] .oryvon-cursor {
+  width: 20px;
+  height: 20px;
+  background: rgba(245, 158, 11, 0.8);
+  border-radius: 50%;
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.6);
+}
+
+body[data-cursor-theme="orbit"] .oryvon-cursor::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 50%;
+  animation: orbit-spin 2s linear infinite;
+}
+
+@keyframes orbit-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ── Cursor Effects ── */
+
+/* Smooth Trail Effect */
+body[data-cursor-effects~="smooth-trail"] .oryvon-cursor {
+  transition: transform 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.2s ease;
+}
+
+/* Glow Intensity Effect */
+body[data-cursor-effects~="glow-intensity"] .oryvon-cursor {
+  box-shadow: 0 0 calc(20px + var(--cursor-glow, 30px)) rgba(245, 158, 11, 0.8), 0 0 calc(40px + var(--cursor-glow, 50px)) rgba(245, 158, 11, 0.4);
+}
+
+/* Hover Expand Effect */
+body[data-cursor-effects~="hover-expand"] .oryvon-cursor.hovering {
+  transform: scale(var(--cursor-scale, 1.2));
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Click Ripple Effect */
+body[data-cursor-effects~="click-ripple"] .oryvon-cursor.clicking::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 40px;
+  height: 40px;
+  border: 2px solid rgba(245, 158, 11, 0.8);
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  animation: ripple 0.4s ease-out;
+}
+
+@keyframes ripple {
+  to {
+    transform: translate(-50%, -50%) scale(2);
+    opacity: 0;
+  }
+}
+
+/* Particle Trail Effect */
+body[data-cursor-effects~="particle-trail"] .cursor-trail {
+  position: fixed;
+  width: 4px;
+  height: 4px;
+  background: rgba(245, 158, 11, 0.6);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 99998;
+  animation: particle-fade 0.5s ease-out forwards;
+}
+
+@keyframes particle-fade {
+  to {
+    opacity: 0;
+    transform: scale(0);
+  }
+}
+
+/* Cinematic Smooth Effect */
+body[data-cursor-effects~="cinematic-smooth"] .oryvon-cursor {
+  transition: transform 0.08s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.15s ease;
+}
+
+/* ── Hover States on Interactive Elements ── */
+body.cursor-custom a,
+body.cursor-custom button,
+body.cursor-custom input,
+body.cursor-custom textarea,
+body.cursor-custom select,
+body.cursor-custom [role="button"] {
+  cursor: none !important;
+}
+
+body.cursor-custom a:hover ~ .oryvon-cursor,
+body.cursor-custom button:hover ~ .oryvon-cursor,
+body.cursor-custom input:hover ~ .oryvon-cursor,
+body.cursor-custom textarea:hover ~ .oryvon-cursor,
+body.cursor-custom select:hover ~ .oryvon-cursor,
+body.cursor-custom [role="button"]:hover ~ .oryvon-cursor {
+  transform: scale(1.3);
+  background: rgba(245, 158, 11, 1);
+}
+
+/* ── Click State ── */
+body.cursor-custom .oryvon-cursor.clicking {
+  transform: scale(0.8);
+  transition: transform 0.05s ease;
+}
+
+/* ── Magnetic Hover Effect ── */
+body[data-cursor-effects~="magnetic-hover"] .oryvon-cursor.magnetic {
+  transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
