@@ -2012,10 +2012,10 @@ export default function Home() {
                       </div>
 
                       <h1
-                        className="font-normal tracking-[0.15em] text-green-500 leading-tight"
+                        className="font-normal tracking-[0.15em] text-white leading-tight"
                         style={{
                           fontFamily: "'Cinzel', serif",
-                          fontSize: '10rem',
+                          fontSize: 'clamp(1.75rem, 3vw, 3.5rem)',
                           textShadow: "0 4px 20px rgba(0,0,0,0.8)",
                         }}
                       >
@@ -2563,7 +2563,7 @@ export default function Home() {
             </div>
           ) : (
             /* ── UNIFIED CINEMATIC HERO & EXPLORE GATEWAY (Single-Screen) ── */
-            <div className="flex flex-col items-center justify-between w-full h-full max-h-screen relative z-20 px-4 sm:px-6 py-3 sm:py-4 overflow-x-hidden">
+            <div className="flex flex-col items-center justify-between w-full relative z-20 overflow-x-hidden" style={{ minHeight: '100dvh', padding: 'clamp(1.5rem, 3vw, 3rem) clamp(1rem, 3vw, 2rem)' }}>
               
               {/* Layered Space/Fantasy Backdrop & Particles Behind Portals */}
               <div className="absolute inset-0 z-0 pointer-events-none select-none overflow-hidden bg-black">
@@ -2672,27 +2672,27 @@ export default function Home() {
               />
 
               {/* ── 1. Top Cinematic Hero Area ── */}
-              <div className="flex flex-col items-center relative z-20 w-full pt-1 md:pt-2">
-                <div className="mb-0.5 md:mb-1 font-mono text-[6px] sm:text-[7px] text-amber-500/35 tracking-[0.3em] sm:tracking-[0.4em] uppercase hero-sub">
+              <div className="flex flex-col items-center relative z-20 w-full" style={{ paddingTop: 'clamp(1rem, 3vw, 3rem)' }}>
+                <div className="font-mono text-amber-500/35 tracking-[0.4em] uppercase hero-sub" style={{ fontSize: 'clamp(6px, 0.8vw, 8px)', marginBottom: 'clamp(0.5rem, 1vw, 1rem)' }}>
                   [ LAT: 59.3293° N // LNG: 18.0686° E // ALT: 850m ]
                 </div>
 
                 {/* Majestic Center Oryndor Symbol Emblem (Centered above O R Y V O N logo) */}
                 <div 
-                  className="mb-1 md:mb-2 relative z-20 pointer-events-auto transition-transform duration-700 hover:scale-[1.04]"
-                  style={{ filter: "drop-shadow(0 0 70px rgba(255, 233, 163, 0.85)) drop-shadow(0 0 35px rgba(201, 147, 58, 0.7)) drop-shadow(0 4px 20px rgba(0,0,0,0.9))" }}
+                  className="relative z-20 pointer-events-auto transition-transform duration-700 hover:scale-[1.04]"
+                  style={{ marginBottom: 'clamp(0.5rem, 1.5vw, 1.5rem)', filter: "drop-shadow(0 0 70px rgba(255, 233, 163, 0.85)) drop-shadow(0 0 35px rgba(201, 147, 58, 0.7)) drop-shadow(0 4px 20px rgba(0,0,0,0.9))" }}
                 >
                   {staticLogoLoaded ? (
                     <img
                       src={staticLogoSymbolUrl}
                       alt="ORYVON Symbol"
                       className="oryvon-logo-float pointer-events-auto object-contain"
-                      style={{ width: 200, height: 200 }}
+                      style={{ width: 'clamp(120px, 18vw, 260px)', height: 'clamp(120px, 18vw, 260px)' }}
                       onError={() => setStaticLogoLoaded(false)}
                     />
                   ) : (
                     <OryndorLogo 
-                      size={200} 
+                      size={220} 
                       variant="icon" 
                       className="oryvon-logo-float pointer-events-auto"
                     />
@@ -2709,8 +2709,11 @@ export default function Home() {
 
                 {/* Elegant Golden Serif Title O R Y V O N */}
                 <h1
-                  className="text-2xl sm:text-3xl md:text-4xl lg:text-[46px] font-normal tracking-[0.35em] sm:tracking-[0.45em] md:tracking-[0.55em] text-center block mr-[-0.35em] sm:mr-[-0.45em] md:mr-[-0.55em] transition-all duration-700 text-white z-20 hero-logo"
+                  className="font-normal text-center block transition-all duration-700 z-20 hero-logo"
                   style={{
+                    fontSize: 'clamp(2rem, 6vw, 5.5rem)',
+                    letterSpacing: '0.5em',
+                    marginRight: '-0.5em',
                     fontFamily: "'Cinzel', 'Times New Roman', serif",
                     background: 'linear-gradient(135deg, #ffffff 0%, #ffe9a3 40%, #c9933a 75%, #ffffff 100%)',
                     WebkitBackgroundClip: 'text',
@@ -2723,7 +2726,7 @@ export default function Home() {
                 </h1>
 
                 {/* Styled Diamond Separator Line */}
-                <div className="flex items-center justify-center w-[140px] sm:w-[180px] my-1 sm:my-1.5 relative z-20 hero-sub">
+                <div className="flex items-center justify-center relative z-20 hero-sub" style={{ width: 'clamp(120px, 20vw, 220px)', margin: 'clamp(0.5rem, 1vw, 1.25rem) 0' }}>
                   <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent via-amber-500/35 to-transparent" />
                   <div 
                     className="w-1.5 h-1.5 rotate-45 border border-amber-500 bg-[#020101] shadow-[0_0_10px_rgba(245,158,11,0.7)] flex items-center justify-center" 
@@ -2735,18 +2738,17 @@ export default function Home() {
 
                 {/* Tagline */}
                 <p
-                  className="tracking-[0.35em] sm:tracking-[0.4em] md:tracking-[0.45em] uppercase text-center font-light block font-mono text-[7px] sm:text-[8px] md:text-[9px] text-amber-500/60 z-20 mr-[-0.35em] sm:mr-[-0.4em] md:mr-[-0.45em] hero-sub"
+                  className="uppercase text-center font-light block font-mono text-amber-500/60 z-20 hero-sub"
+                  style={{ fontSize: 'clamp(7px, 0.9vw, 10px)', letterSpacing: '0.45em', marginRight: '-0.45em' }}
                 >
                   {homepageSettings.slogan || t('home.worldsEvolve')}
                 </p>
 
                 {/* Descend to Explore Archive indicator */}
-                <div className="flex flex-col items-center gap-1 mt-2 sm:mt-3 md:mt-4 relative z-20 pointer-events-none hero-sub">
+                <div className="flex flex-col items-center gap-1 relative z-20 pointer-events-none hero-sub" style={{ marginTop: 'clamp(1rem, 2vw, 2rem)' }}>
                   <span 
-                    className="font-mono text-[6px] sm:text-[6.5px] md:text-[7.5px] text-amber-500/40 tracking-[0.35em] sm:tracking-[0.45em] uppercase"
-                    style={{
-                      textShadow: "0 0 8px rgba(245,158,11,0.2)"
-                    }}
+                    className="font-mono text-amber-500/40 uppercase"
+                    style={{ fontSize: 'clamp(6px, 0.8vw, 8px)', letterSpacing: '0.45em', textShadow: "0 0 8px rgba(245,158,11,0.2)" }}
                   >
                     {homepageSettings.subtitle || t('home.descendExplore')}
                   </span>
@@ -2763,7 +2765,7 @@ export default function Home() {
               </div>
 
               {/* ── 2. Explore Realms Title ── */}
-              <div className="hero-sub pointer-events-none select-none flex flex-col items-center justify-center gap-0.5 w-full relative z-20 my-0.5 md:my-1 px-4 sm:px-6">
+              <div className="hero-sub pointer-events-none select-none flex flex-col items-center justify-center w-full relative z-20 px-4" style={{ gap: 'clamp(0.25rem, 0.5vw, 0.5rem)', margin: 'clamp(0.5rem, 1.5vw, 1.5rem) 0' }}>
                 <div className="flex items-center justify-center gap-4 w-full max-w-xl">
                   <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent via-[#c9933a]/60 to-[#c9933a]/90" />
                   <div className="w-2.5 h-2.5 rotate-45 border border-amber-500 bg-[#020101] shadow-[0_0_15px_rgba(245,158,11,0.9)] flex items-center justify-center">
@@ -2773,8 +2775,11 @@ export default function Home() {
                 </div>
                 
                 <h2
-                  className="text-sm sm:text-base md:text-lg font-normal tracking-[0.35em] sm:tracking-[0.4em] md:tracking-[0.45em] text-center block select-none text-white mr-[-0.35em] sm:mr-[-0.4em] md:mr-[-0.45em]"
+                  className="font-normal text-center block select-none"
                   style={{
+                    fontSize: 'clamp(0.875rem, 1.8vw, 1.5rem)',
+                    letterSpacing: '0.45em',
+                    marginRight: '-0.45em',
                     fontFamily: "'Cinzel', 'Times New Roman', serif",
                     background: 'linear-gradient(135deg, #ffffff 0%, #ffe9a3 40%, #c9933a 75%, #ffffff 100%)',
                     WebkitBackgroundClip: 'text',
@@ -2787,14 +2792,15 @@ export default function Home() {
                 </h2>
                 
                 <span
-                  className="font-mono text-[6.5px] sm:text-[7px] md:text-[7.5px] text-[#eed078]/55 tracking-[0.4em] sm:tracking-[0.48em] uppercase mr-[-0.4em] sm:mr-[-0.48em]"
+                  className="font-mono text-[#eed078]/55 uppercase"
+                  style={{ fontSize: 'clamp(6.5px, 0.85vw, 8px)', letterSpacing: '0.48em', marginRight: '-0.48em' }}
                 >
                   {homepageSettings.subtitle || t('home.chooseRealm')}
                 </span>
               </div>
 
               {/* ── 3. Portal Cards Row ── */}
-              <div className="flex flex-col sm:flex-row justify-center items-center gap-4 sm:gap-3.5 md:gap-3.5 lg:gap-4.5 xl:gap-5.5 w-full max-w-[1450px] relative z-20 pb-3 md:pb-5 px-4 sm:px-0">
+              <div className="flex flex-col sm:flex-row justify-center items-center w-full max-w-[1600px] relative z-20 px-2 sm:px-0" style={{ gap: 'clamp(1rem, 2vw, 2rem)', paddingBottom: 'clamp(1.5rem, 3vw, 3rem)' }}>
                 {liveGenres.map((g) => (
                   <EraPortal
                     key={g.id}
