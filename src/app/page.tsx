@@ -1906,12 +1906,12 @@ export default function Home() {
         </div>
 
         {/* Content wrapper */}
-        <div className="w-full py-2 md:py-3 pb-12 md:pb-16 flex flex-col justify-between items-center relative z-30">
+        <div className="w-full py-3 md:py-4 pb-16 md:pb-20 flex flex-col justify-between items-center relative z-30">
           {selectedGenre && activeGenreInfo ? (
             /* ── Immersive Unified Netflix/IMDb Multiverse Portal (Layer 1) ── */
             <div className="flex flex-col items-center w-full pt-12 p-4 md:p-8 gap-6 md:gap-8 pb-32">
               {/* Top Navigation Bar */}
-              <div className="w-full max-w-[1720px] px-4 md:px-8 flex flex-col md:flex-row justify-between items-center gap-4 md:gap-6 border-b border-white/10 pb-6">
+              <div className="w-full max-w-[1920px] px-4 md:px-8 flex flex-col md:flex-row justify-between items-center gap-4 md:gap-6 border-b border-white/10 pb-6">
                 <div className="flex flex-col items-center md:items-start gap-1">
                   <span
                     className="font-mono text-[7px] md:text-[8px] tracking-[0.4em] uppercase"
@@ -1920,7 +1920,7 @@ export default function Home() {
                     {t('common.systemActive')} // {activeGenreInfo.system}
                   </span>
                   <h2
-                    className="text-xl md:text-2xl lg:text-3xl font-normal tracking-[0.2em] text-white uppercase"
+                    className="text-2xl md:text-3xl lg:text-4xl font-normal tracking-[0.2em] text-white uppercase"
                     style={{ fontFamily: "'Cinzel', serif" }}
                   >
                     {activeGenreInfo.label} {t('uni.realms').toUpperCase()}
@@ -1928,7 +1928,7 @@ export default function Home() {
                 </div>
 
                 <div className="flex items-center gap-4 md:gap-6">
-                  <OryndorLogo size={120} variant="horizontal" />
+                  <OryndorLogo size={140} variant="horizontal" />
                   <button
                     onClick={() => handleGenreClick(null)}
                     className="px-5 py-2.5 md:px-6 md:py-3 rounded-full border font-mono uppercase text-white/50 hover:text-white transition-all duration-300 bg-white/5 cursor-none flex items-center gap-2 text-[9px] md:text-[10px] tracking-[0.3em]"
@@ -1946,9 +1946,9 @@ export default function Home() {
 
               {/* Widescreen Hero Carousel (Cinema grade overview) */}
               {featuredSlides.length > 0 && (
-                <div className="carousel-container w-full max-w-[1720px] px-4 md:px-8 relative rounded-xl overflow-hidden mb-4 animate-fade-in">
+                <div className="carousel-container w-full max-w-[1920px] px-4 md:px-8 relative rounded-xl overflow-hidden mb-4 animate-fade-in">
                   <div
-                    className="relative w-full rounded-xl overflow-hidden border border-white/10 aspect-[21/9] md:aspect-[16/9] lg:aspect-[21/9] min-h-[300px] md:min-h-[360px] lg:min-h-[460px] bg-cover bg-center transition-all duration-1000 ease-in-out"
+                    className="relative w-full rounded-xl overflow-hidden border border-white/10 aspect-[21/9] md:aspect-[16/9] lg:aspect-[21/9] min-h-[350px] md:min-h-[420px] lg:min-h-[520px] bg-cover bg-center transition-all duration-1000 ease-in-out"
                     style={{
                       backgroundImage: `url(${featuredSlides[activeSlide].image})`,
                       boxShadow: `0 20px 80px rgba(0,0,0,0.95), inset 0 0 100px rgba(0,0,0,0.85)`,
@@ -1970,7 +1970,7 @@ export default function Home() {
                       </div>
 
                       <h1
-                        className="text-2xl md:text-3xl lg:text-5xl xl:text-6xl font-normal tracking-[0.15em] text-white leading-tight"
+                        className="text-3xl md:text-4xl lg:text-6xl xl:text-7xl font-normal tracking-[0.15em] text-white leading-tight"
                         style={{
                           fontFamily: "'Cinzel', serif",
                           textShadow: "0 4px 20px rgba(0,0,0,0.8)",
@@ -1992,7 +1992,7 @@ export default function Home() {
                         )}
                       </div>
 
-                      <p className="text-white/70 text-[10px] md:text-xs lg:text-sm font-sans leading-relaxed tracking-wide mt-1 md:mt-2 line-clamp-2 md:line-clamp-3">
+                      <p className="text-white/70 text-xs md:text-sm lg:text-base font-sans leading-relaxed tracking-wide mt-1 md:mt-2 line-clamp-2 md:line-clamp-3">
                         {featuredSlides[activeSlide].teaser}
                       </p>
 
@@ -2065,7 +2065,7 @@ export default function Home() {
               )}
 
               {/* Filter & Search Console */}
-              <div className="w-full max-w-[1720px] px-4 md:px-8 flex flex-col lg:flex-row gap-4 md:gap-6 justify-between items-center py-3 md:py-4 mb-3 md:mb-4 bg-white/[0.02] border border-white/5 rounded-xl p-4 md:p-6 backdrop-blur-md">
+              <div className="w-full max-w-[1920px] px-4 md:px-8 flex flex-col lg:flex-row gap-4 md:gap-6 justify-between items-center py-3 md:py-4 mb-3 md:mb-4 bg-white/[0.02] border border-white/5 rounded-xl p-4 md:p-6 backdrop-blur-md">
                 {/* Search Bar */}
                 <div className="relative w-full lg:max-w-md">
                   <input
@@ -2155,7 +2155,7 @@ export default function Home() {
                   </span>
                 </div>
               ) : (
-                <div className="w-full max-w-[1720px] px-4 md:px-8 flex flex-col gap-12">
+                <div className="w-full max-w-[1920px] px-4 md:px-8 flex flex-col gap-12">
                   {filteredUniverses.length === 0 ? (
                     <div className="w-full text-center py-20 flex flex-col items-center gap-4">
                       <Compass size={60} color={activeGenreInfo.color} pulse />
@@ -2188,7 +2188,7 @@ export default function Home() {
                           {filteredUniverses.filter(u => u.featured || filteredUniverses.indexOf(u) === 0).map((uni) => (
                             <div
                               key={uni.id}
-                              className="w-[240px] md:w-[320px] lg:w-[280px]"
+                              className="w-[280px] md:w-[380px] lg:w-[340px]"
                             >
                               <UniverseCard
                                 uni={uni}
