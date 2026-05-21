@@ -4,20 +4,6 @@
   "installCommand": "npm install",
   "framework": "nextjs",
   "regions": ["iad1"],
-  "env": {
-    "NEXT_PUBLIC_SUPABASE_URL": {
-      "description": "Your Supabase project URL",
-      "value": null
-    },
-    "NEXT_PUBLIC_SUPABASE_ANON_KEY": {
-      "description": "Your Supabase anonymous key",
-      "value": null
-    },
-    "NEXT_PUBLIC_SITE_URL": {
-      "description": "Your production site URL",
-      "value": null
-    }
-  },
   "headers": [
     {
       "source": "/(.*)",
