@@ -1874,7 +1874,7 @@ export default function Home() {
     >
       <main
         ref={mainRef}
-        className="w-full min-h-screen flex flex-col items-center justify-start relative bg-[#020101] select-none"
+        className="w-full min-h-screen flex flex-col items-center justify-start relative bg-[#020101]"
       >
         {/* Background canvas layers (WebGL stars, nebula mist, and colossal 3D orbit rings) */}
         <div className="fixed inset-0 z-0 pointer-events-none oryvon-bg-root">
@@ -1906,7 +1906,7 @@ export default function Home() {
         </div>
 
         {/* Content wrapper */}
-        <div className={`w-full ${selectedGenre ? "min-h-screen" : "h-screen max-h-screen overflow-hidden py-2 md:py-3 pb-12 md:pb-16 flex flex-col justify-between items-center"} relative z-30`}>
+        <div className="w-full min-h-screen py-2 md:py-3 pb-12 md:pb-16 flex flex-col justify-between items-center relative z-30">
           {selectedGenre && activeGenreInfo ? (
             /* ── Immersive Unified Netflix/IMDb Multiverse Portal (Layer 1) ── */
             <div className="flex flex-col items-center w-full pt-12 p-4 md:p-8 gap-6 md:gap-8 pb-32">
