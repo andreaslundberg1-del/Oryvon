@@ -1536,8 +1536,13 @@ export default function Home() {
   }, []);
 
   // Listen for preview updates from admin editor
+  // DISABLED: PostMessage listener was overriding CSS/layout changes
+  // Only content fields should be updated, layout is controlled by hardcoded CSS
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
+      // Temporarily disabled to allow CSS/layout changes to take effect
+      // Re-enable after fixing the merge logic to only update content fields
+      /*
       if (event.data?.type === "ORYVON_PREVIEW_UPDATE" && event.data.payload?.homepageSettings) {
         const draftSettings = event.data.payload.homepageSettings;
 
@@ -1598,6 +1603,7 @@ export default function Home() {
           setLiveGenres(mergedGenres);
         }
       }
+      */
     };
 
     window.addEventListener("message", handleMessage);
@@ -1869,12 +1875,12 @@ export default function Home() {
 
   return (
     <div 
-      className="w-full bg-red-600 text-white"
+      className="w-full bg-[#020101] text-white"
       style={previewWidth ? { width: `${previewWidth}px`, margin: "0 auto" } : undefined}
     >
       <main
         ref={mainRef}
-        className="w-full flex flex-col items-center justify-start relative bg-red-600"
+        className="w-full flex flex-col items-center justify-start relative bg-[#020101]"
       >
         {/* Background canvas layers (WebGL stars, nebula mist, and colossal 3D orbit rings) */}
         <div className="fixed inset-0 z-0 pointer-events-none oryvon-bg-root">
