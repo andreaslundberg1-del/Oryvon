@@ -1098,8 +1098,8 @@ function EraPortal({
     <div 
       className="relative cursor-none select-none transition-all duration-[750ms] ease-[cubic-bezier(0.25,1,0.5,1)] group w-full sm:w-auto"
       style={{ 
-        width: "clamp(135px, 9.2vw, 172px)",
-        height: "clamp(285px, 19.5vw, 360px)",
+        width: "clamp(130px, 12.5vw, 200px)",
+        height: "clamp(260px, 27vw, 430px)",
         transform: hovered ? "translateY(-14px) scale(1.05)" : "translateY(0) scale(1)",
       }}
       onClick={onClick}
@@ -1141,8 +1141,8 @@ function EraPortal({
             opacity: 1.0,
             transform: hovered ? "scale(1.16)" : "scale(1.04)",
             filter: hovered 
-              ? "brightness(0.62) contrast(1.15) saturate(0.85)" 
-              : "brightness(0.38) contrast(1.1) saturate(0.70)",
+              ? "brightness(0.75) contrast(1.15) saturate(0.90)" 
+              : "brightness(0.55) contrast(1.1) saturate(0.80)",
           }}
         />
 
@@ -2563,7 +2563,7 @@ export default function Home() {
             </div>
           ) : (
             /* ── UNIFIED CINEMATIC HERO & EXPLORE GATEWAY (Single-Screen) ── */
-            <div className="flex flex-col items-center justify-between w-full relative z-20 overflow-x-hidden" style={{ minHeight: '100dvh', padding: 'clamp(1.5rem, 3vw, 3rem) clamp(1rem, 3vw, 2rem)' }}>
+            <div className="flex flex-col items-center justify-between w-full relative z-20 overflow-x-hidden" style={{ minHeight: '100dvh', padding: 'clamp(0.75rem, 2vw, 2rem) clamp(1rem, 3vw, 2rem)' }}>
               
               {/* Layered Space/Fantasy Backdrop & Particles Behind Portals */}
               <div className="absolute inset-0 z-0 pointer-events-none select-none overflow-hidden bg-black">
@@ -2672,7 +2672,7 @@ export default function Home() {
               />
 
               {/* ── 1. Top Cinematic Hero Area ── */}
-              <div className="flex flex-col items-center relative z-20 w-full" style={{ paddingTop: 'clamp(1rem, 3vw, 3rem)' }}>
+              <div className="flex flex-col items-center relative z-20 w-full" style={{ paddingTop: 'clamp(0.5rem, 2vw, 2rem)' }}>
                 <div className="font-mono text-amber-500/35 tracking-[0.4em] uppercase hero-sub" style={{ fontSize: 'clamp(6px, 0.8vw, 8px)', marginBottom: 'clamp(0.5rem, 1vw, 1rem)' }}>
                   [ LAT: 59.3293° N // LNG: 18.0686° E // ALT: 850m ]
                 </div>
@@ -2687,7 +2687,7 @@ export default function Home() {
                       src={staticLogoSymbolUrl}
                       alt="ORYVON Symbol"
                       className="oryvon-logo-float pointer-events-auto object-contain"
-                      style={{ width: 'clamp(120px, 18vw, 260px)', height: 'clamp(120px, 18vw, 260px)' }}
+                      style={{ width: 'clamp(140px, 20vw, 300px)', height: 'clamp(140px, 20vw, 300px)' }}
                       onError={() => setStaticLogoLoaded(false)}
                     />
                   ) : (
@@ -2711,7 +2711,7 @@ export default function Home() {
                 <h1
                   className="font-normal text-center block transition-all duration-700 z-20 hero-logo"
                   style={{
-                    fontSize: 'clamp(2rem, 6vw, 5.5rem)',
+                    fontSize: 'clamp(2.5rem, 7.5vw, 7rem)',
                     letterSpacing: '0.5em',
                     marginRight: '-0.5em',
                     fontFamily: "'Cinzel', 'Times New Roman', serif",
@@ -2765,7 +2765,7 @@ export default function Home() {
               </div>
 
               {/* ── 2. Explore Realms Title ── */}
-              <div className="hero-sub pointer-events-none select-none flex flex-col items-center justify-center w-full relative z-20 px-4" style={{ gap: 'clamp(0.25rem, 0.5vw, 0.5rem)', margin: 'clamp(0.5rem, 1.5vw, 1.5rem) 0' }}>
+              <div className="hero-sub pointer-events-none select-none flex flex-col items-center justify-center w-full relative z-20 px-4" style={{ gap: 'clamp(0.25rem, 0.5vw, 0.5rem)', margin: 'clamp(0.25rem, 1vw, 1rem) 0' }}>
                 <div className="flex items-center justify-center gap-4 w-full max-w-xl">
                   <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent via-[#c9933a]/60 to-[#c9933a]/90" />
                   <div className="w-2.5 h-2.5 rotate-45 border border-amber-500 bg-[#020101] shadow-[0_0_15px_rgba(245,158,11,0.9)] flex items-center justify-center">
@@ -2800,7 +2800,7 @@ export default function Home() {
               </div>
 
               {/* ── 3. Portal Cards Row ── */}
-              <div className="flex flex-col sm:flex-row justify-center items-center w-full max-w-[1600px] relative z-20 px-2 sm:px-0" style={{ gap: 'clamp(1rem, 2vw, 2rem)', paddingBottom: 'clamp(1.5rem, 3vw, 3rem)' }}>
+              <div className="flex flex-col sm:flex-row justify-center items-center w-full max-w-[1600px] relative z-20 px-2 sm:px-0" style={{ gap: 'clamp(0.75rem, 1.5vw, 1.5rem)', paddingBottom: 'clamp(1rem, 2vw, 2rem)' }}>
                 {liveGenres.map((g) => (
                   <EraPortal
                     key={g.id}
