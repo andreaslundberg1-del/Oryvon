@@ -17,7 +17,10 @@ export function MediaPicker({ value, onChange, label, accept = 'image/*', maxSiz
   const [uploadProgress, setUploadProgress] = useState(0);
   const [showLibrary, setShowLibrary] = useState(false);
   const [previewError, setPreviewError] = useState(false);
+  const [uploadedImages, setUploadedImages] = useState<string[]>([]);
+  const [libraryDragging, setLibraryDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const libraryFileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = async (file: File) => {
     // Validate file size
@@ -56,6 +59,8 @@ export function MediaPicker({ value, onChange, label, accept = 'image/*', maxSiz
             if (response.success && response.url) {
               onChange(response.url);
               setUploadProgress(100);
+              // Add to uploaded images library
+              setUploadedImages(prev => [response.url, ...prev]);
             } else {
               throw new Error(response.error || 'Upload failed');
             }
@@ -253,9 +258,87 @@ export function MediaPicker({ value, onChange, label, accept = 'image/*', maxSiz
               </button>
             </div>
 
+            {/* Upload from computer button */}
+            <div className="mb-6">
+              <button
+                onClick={() => libraryFileInputRef.current?.click()}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 rounded-lg transition-all"
+              >
+                <Upload size={16} className="text-amber-400" />
+                <span className="text-sm font-mono uppercase tracking-wider text-amber-400">Upload from computer</span>
+              </button>
+              <input
+                ref={libraryFileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/jpg,image/webp,image/svg+xml"
+                onChange={(e) => {
+                  const files = e.target.files;
+                  if (files && files.length > 0) {
+                    handleFileSelect(files[0]);
+                  }
+                }}
+                className="hidden"
+              />
+            </div>
+
+            {/* Drag and drop area */}
+            <div
+              onDrop={(e) => {
+                e.preventDefault();
+                setLibraryDragging(false);
+                const files = Array.from(e.dataTransfer.files);
+                if (files.length > 0) {
+                  handleFileSelect(files[0]);
+                }
+              }}
+              onDragOver={(e) => {
+                e.preventDefault();
+                setLibraryDragging(true);
+              }}
+              onDragLeave={(e) => {
+                e.preventDefault();
+                setLibraryDragging(false);
+              }}
+              className={`mb-6 border-2 border-dashed rounded-xl p-8 transition-all duration-300 ${
+                libraryDragging
+                  ? 'border-amber-500/50 bg-amber-500/5'
+                  : 'border-white/10 bg-black/20'
+              }`}
+            >
+              <div className="text-center">
+                <Upload size={32} className="text-white/40 mx-auto mb-3" />
+                <p className="text-sm font-mono text-white/60 mb-1">Drag and drop images here</p>
+                <p className="text-xs font-mono text-white/30">PNG, JPG, JPEG, WEBP, SVG</p>
+              </div>
+            </div>
+
             <div className="flex-1 overflow-y-auto">
               <div className="grid grid-cols-4 gap-4">
-                {/* Sample media items - in production, this would be loaded from your media library */}
+                {/* Uploaded images */}
+                {uploadedImages.map((url, index) => (
+                  <div
+                    key={index}
+                    onClick={() => {
+                      onChange(url);
+                      setShowLibrary(false);
+                    }}
+                    className="relative group cursor-pointer"
+                  >
+                    <img
+                      src={url}
+                      alt={`Uploaded ${index + 1}`}
+                      className="w-full aspect-square object-cover rounded-lg border border-white/10 group-hover:border-amber-500/50 transition-colors"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
+                      <Check size={24} className="text-amber-400" />
+                    </div>
+                  </div>
+                ))}
+
+                {/* Sample media items */}
                 {[
                   '/Images/oryndor_symbol.png',
                   '/Images/logo.png',
@@ -263,7 +346,7 @@ export function MediaPicker({ value, onChange, label, accept = 'image/*', maxSiz
                   '/Images/hero-bg.jpg',
                 ].map((url, index) => (
                   <div
-                    key={index}
+                    key={`sample-${index}`}
                     onClick={() => {
                       onChange(url);
                       setShowLibrary(false);
@@ -285,11 +368,13 @@ export function MediaPicker({ value, onChange, label, accept = 'image/*', maxSiz
                 ))}
               </div>
 
-              <div className="mt-6 p-4 bg-white/5 rounded-lg border border-white/10">
-                <p className="text-xs font-mono text-white/40 text-center">
-                  Media library will be populated with uploaded assets. Upload images to add them here.
-                </p>
-              </div>
+              {uploadedImages.length === 0 && (
+                <div className="mt-6 p-4 bg-white/5 rounded-lg border border-white/10">
+                  <p className="text-xs font-mono text-white/40 text-center">
+                    Upload images to add them to your media library. They will appear here after upload.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>
