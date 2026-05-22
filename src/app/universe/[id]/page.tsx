@@ -151,180 +151,429 @@ function OverviewTab({ data, accent, rgb, onTab }: { data: any; accent: string; 
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-//  MAP TAB
+//  MAP TAB  — Premium Middle-earth Atlas
 // ══════════════════════════════════════════════════════════════════════════════
 const MAP_LOCATIONS = [
-  { id: 'shire',     name: 'The Shire',     region: 'ERIADOR',    x: 18, y: 55, type: 'City',        desc: 'A peaceful, lush countryside inhabited by Hobbits. The home of Frodo and Bilbo Baggins, untouched by the outside world for centuries.' },
-  { id: 'rivendell', name: 'Rivendell',     region: 'ERIADOR',    x: 28, y: 42, type: 'Stronghold',  desc: 'A hidden Elven sanctuary in Eriador, ruled by Elrond Half-elven. A place of wisdom, healing, and ancient lore.' },
-  { id: 'lorien',    name: 'Lothlórien',    region: 'RHOVANION',  x: 38, y: 50, type: 'Stronghold',  desc: 'The golden wood of Galadriel and Celeborn, where time seems to stand still and magic permeates every leaf.' },
-  { id: 'rohan',     name: 'Rohan',         region: 'ROHAN',      x: 34, y: 63, type: 'Region',      desc: 'The great horse-lords of the Riddermark. A plains kingdom known for its cavalry and the golden hall of Meduseld at Edoras.' },
-  { id: 'gondor',    name: 'Gondor',        region: 'GONDOR',     x: 42, y: 70, type: 'City',        desc: 'The southern kingdom of Men, guardian of the White Tree and last great bastion against Mordor\'s darkness.' },
-  { id: 'minastirith',name:'Minas Tirith',  region: 'GONDOR',     x: 46, y: 67, type: 'Stronghold',  desc: 'The seven-tiered citadel of Gondor, carved into Mount Mindolluin, guarding the fertile plains of the Pelennor.' },
-  { id: 'mordor',    name: 'Mordor',        region: 'MORDOR',     x: 60, y: 62, type: 'Region',      desc: 'The black wasteland of Sauron, bounded by the Mountains of Shadow. A land of ash, fire, and ceaseless shadow.' },
-  { id: 'mountdoom', name: 'Mount Doom',    region: 'MORDOR',     x: 65, y: 65, type: 'Landmark',    desc: 'The fiery volcano of Orodruin where the One Ring was forged and ultimately destroyed by Frodo and Gollum.' },
+  { id: 'shire',      name: 'The Shire',   region: 'Eriador',   x: 17,  y: 52,  type: 'City',       races: 'Hobbits',    govt: 'Shire Thain',  age: 'Before TA 1601', area: 'Approx. 1,000 sq mi', desc: 'The Shire is a peaceful region located in the northwest of Middle-earth, home to the Hobbits. Known for its rolling green hills, fertile lands, and secluded way of life.', locations: ['Hobbiton','Bag End','Bywater','Crickhollow'], img: '/Images/middle_earth_rivendell.png' },
+  { id: 'rivendell',  name: 'Rivendell',   region: 'Eriador',   x: 31,  y: 40,  type: 'Stronghold', races: 'Elves',      govt: 'Lord Elrond',  age: 'Second Age',     area: 'Hidden valley',       desc: 'A hidden Elven sanctuary founded by Elrond Half-elven, nestled in a steep valley by the River Bruinen. A refuge of wisdom, healing, and ancient lore.',              locations: ['Hall of Fire','Library','Forge'], img: '/Images/middle_earth_rivendell.png' },
+  { id: 'bree',       name: 'Bree',        region: 'Eriador',   x: 22,  y: 46,  type: 'City',       races: 'Men, Hobbits',govt: 'Bree-moot',   age: 'First Age',      area: 'Small township',      desc: 'An ancient crossroads town where the Great East Road meets the North Road. Home to both Men and Hobbits, known for the Prancing Pony inn.',                           locations: ['Prancing Pony','Bree-gate'], img: '/Images/middle_earth_rivendell.png' },
+  { id: 'rohan',      name: 'Rohan',       region: 'Rohan',     x: 33,  y: 62,  type: 'Region',     races: 'Rohirrim',   govt: 'King of Rohan',age: 'Third Age',      area: '50,000 sq mi',        desc: 'The great horse-lords of the Riddermark. A sweeping plains kingdom famed for its cavalry, the Mearas, and the golden hall of Meduseld at Edoras.',                  locations: ['Edoras','Helm\'s Deep','Meduseld'], img: '/Images/middle_earth_rivendell.png' },
+  { id: 'minastirith',name: 'Minas Tirith',region: 'Gondor',    x: 45,  y: 65,  type: 'Stronghold', races: 'Men',        govt: 'Steward/King', age: 'Third Age',      area: 'Seven-tiered city',   desc: 'The seven-tiered citadel of Gondor, carved into the slopes of Mount Mindolluin, the last great fortress of Men against the shadow of Mordor.',                       locations: ['White Tower','Pelennor Fields','Minas Morgul'], img: '/Images/middle_earth_rivendell.png' },
+  { id: 'baradudr',   name: 'Barad-dûr',   region: 'Mordor',    x: 63,  y: 57,  type: 'Stronghold', races: 'Orcs, Nazgûl',govt: 'Dark Lord',   age: 'Second Age',     area: 'Black fortress',      desc: 'The Dark Tower, fortress of Sauron, built upon a spur of the Ered Lithui. Its foundations were laid with the power of the One Ring itself.',                        locations: ['Tower of Sauron','Dark Gate'], img: '/Images/middle_earth_rivendell.png' },
+  { id: 'mountdoom',  name: 'Mount Doom',  region: 'Mordor',    x: 67,  y: 63,  type: 'Landmark',   races: '—',          govt: '—',            age: 'Before First Age',area: 'Volcanic mountain',   desc: 'The fiery volcano of Orodruin, the Crack of Doom. Here the One Ring was forged in the fires of Sauron\'s will, and here it was ultimately destroyed by Frodo and Gollum.', locations: ['Sammath Naur','Cracks of Doom'], img: '/Images/middle_earth_rivendell.png' },
+  { id: 'lothlórien', name: 'Lothlórien',  region: 'Rhovanion', x: 40,  y: 51,  type: 'Stronghold', races: 'Elves',      govt: 'Lady Galadriel',age: 'Second Age',    area: 'Golden wood',         desc: 'The golden wood ruled by Galadriel and Celeborn. Time seems to stand still here; the Elves who dwell within have maintained it since the Elder Days.',               locations: ['Caras Galadhon','Mirror of Galadriel'], img: '/Images/middle_earth_rivendell.png' },
+];
+
+// Region labels drawn directly on the map canvas
+const REGION_LABELS = [
+  { name: 'GREY MOUNTAINS',  sub: '',               x: 51,  y: 11,  size: 10 },
+  { name: 'ARNOR',           sub: 'The Northern Realm', x: 30, y: 22, size: 13 },
+  { name: 'ERIADOR',         sub: 'The Lonely Land', x: 19, y: 33,  size: 15 },
+  { name: 'MIRKWOOD',        sub: 'The Great Forest', x: 55, y: 33, size: 13 },
+  { name: 'RHÛN',            sub: 'The East',        x: 78,  y: 30,  size: 13 },
+  { name: 'RED MOUNTAINS',   sub: '',               x: 70,  y: 42,  size: 9,  vertical: true },
+  { name: 'ROHAN',           sub: 'The Mark',        x: 33,  y: 58,  size: 15 },
+  { name: 'GONDOR',          sub: 'The Southern Realm', x: 41, y: 70, size: 15 },
+  { name: 'MORDOR',          sub: 'The Land of Shadow', x: 63, y: 60, size: 17 },
+  { name: 'BELEGAER',        sub: 'The Great Sea',   x: 5,   y: 55,  size: 11 },
+  { name: 'FORLINDOND',      sub: '',               x: 10,  y: 42,  size: 9  },
+  { name: 'UMBAR',           sub: '',               x: 27,  y: 81,  size: 9  },
+  { name: 'HARADWAITH',      sub: 'The Southlands',  x: 50,  y: 82,  size: 11 },
+];
+
+// Small city/place labels always visible on map
+const PLACE_LABELS = [
+  { name: 'The Shire', x: 17, y: 52 },
+  { name: 'Rivendell', x: 31, y: 40 },
+  { name: 'Bree',      x: 22, y: 46 },
+  { name: 'Minas Tirith', x: 45, y: 65 },
+  { name: 'Barad-dûr', x: 63, y: 57 },
+  { name: 'Mount Doom',x: 67, y: 63 },
 ];
 
 function MapTab({ data, accent, rgb }: { data: any; accent: string; rgb: string }) {
-  const [selected, setSelected] = useState(MAP_LOCATIONS[1]);
+  const [selected, setSelected] = useState(MAP_LOCATIONS[0]);
   const [zoom, setZoom] = useState(1);
-  const [filter, setFilter] = useState<string>('All');
-  const filters = ['All', 'City', 'Stronghold', 'Region', 'Landmark'];
-  const visible = filter === 'All' ? MAP_LOCATIONS : MAP_LOCATIONS.filter(l => l.type === filter);
+  const [panX, setPanX] = useState(0);
+  const [panY, setPanY] = useState(0);
+  const [view, setView] = useState('Political');
+  const [viewOpen, setViewOpen] = useState(false);
+  const [activeFilters, setActiveFilters] = useState<string[]>(['Cities','Strongholds','Landmarks','Regions']);
+  const [showLocations, setShowLocations] = useState(true);
+  const [panelOpen, setPanelOpen] = useState(true);
+  const isDragging = useRef(false);
+  const dragStart = useRef({ x: 0, y: 0, px: 0, py: 0 });
+  const mapRef = useRef<HTMLDivElement>(null);
+
+  const filterDefs = [
+    { id: 'Cities',      icon: '●', types: ['City'] },
+    { id: 'Strongholds', icon: '◆', types: ['Stronghold'] },
+    { id: 'Landmarks',   icon: '⬟', types: ['Landmark'] },
+    { id: 'Regions',     icon: '○', types: ['Region'] },
+  ];
+
+  const toggleFilter = (f: string) =>
+    setActiveFilters(prev => prev.includes(f) ? prev.filter(x => x !== f) : [...prev, f]);
+
+  const visibleLocs = MAP_LOCATIONS.filter(l => {
+    const fd = filterDefs.find(f => f.types.includes(l.type));
+    return fd ? activeFilters.includes(fd.id) : true;
+  });
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    isDragging.current = true;
+    dragStart.current = { x: e.clientX, y: e.clientY, px: panX, py: panY };
+  };
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging.current) return;
+    setPanX(dragStart.current.px + (e.clientX - dragStart.current.x));
+    setPanY(dragStart.current.py + (e.clientY - dragStart.current.y));
+  };
+  const handleMouseUp = () => { isDragging.current = false; };
+
+  const panelLoc = selected;
 
   return (
-    <div className="flex h-full">
-      {/* Map area */}
-      <div className="flex-1 relative overflow-hidden bg-[#0a0907]">
-        <img src={data.locations?.[0]?.image || data.backdrop} alt="Map"
-          className="absolute inset-0 w-full h-full object-cover"
-          style={{ filter: 'brightness(0.38) saturate(0.5) sepia(0.4)', transform: `scale(${zoom})`, transformOrigin: 'center', transition: 'transform 0.3s' }} />
+    <div className="flex h-full overflow-hidden bg-[#0e0c09]">
 
-        {/* tint overlay */}
-        <div className="absolute inset-0 pointer-events-none"
-          style={{ background: `radial-gradient(ellipse at center, ${accent}08 0%, rgba(0,0,0,0.3) 100%)` }} />
-
-        {/* Region labels */}
-        {[
-          { name: 'FORODWAITH', x: 35, y: 8 },
-          { name: 'ERIADOR',    x: 20, y: 32 },
-          { name: 'RHOVANION',  x: 55, y: 30 },
-          { name: 'RHUN',       x: 78, y: 28 },
-          { name: 'THE SHIRE',  x: 14, y: 56 },
-          { name: 'LORIEN',     x: 37, y: 48 },
-          { name: 'ROHAN',      x: 30, y: 64 },
-          { name: 'GONDOR',     x: 43, y: 73 },
-          { name: 'MORDOR',     x: 62, y: 60 },
-        ].map(r => (
-          <p key={r.name} className="absolute font-mono text-[8px] tracking-[0.35em] uppercase text-white/20 pointer-events-none select-none"
-            style={{ left: `${r.x}%`, top: `${r.y}%`, transform: 'translate(-50%,-50%)', letterSpacing: '0.4em' }}>{r.name}</p>
-        ))}
-
-        {/* Location markers */}
-        {visible.map(loc => (
-          <button key={loc.id} onClick={() => setSelected(loc)}
-            className="absolute group"
-            style={{ left: `${loc.x}%`, top: `${loc.y}%`, transform: 'translate(-50%,-50%)' }}>
-            <div className="relative flex items-center justify-center">
-              {/* Pulse ring */}
-              {selected.id === loc.id && (
-                <div className="absolute w-7 h-7 rounded-full animate-ping opacity-30" style={{ background: accent }} />
-              )}
-              <div className="w-2.5 h-2.5 rounded-full border-2 relative z-10 transition-all duration-200 group-hover:scale-150"
-                style={{
-                  borderColor: accent,
-                  background: selected.id === loc.id ? accent : 'rgba(8,6,4,0.9)',
-                  boxShadow: selected.id === loc.id ? `0 0 12px ${accent}` : `0 0 6px ${accent}55`,
-                }} />
-            </div>
-            {/* Label */}
-            <div className="absolute top-4 left-1/2 -translate-x-1/2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none z-20">
-              <div className="px-2 py-1 rounded-sm font-mono text-[7.5px] text-white/90 tracking-wider"
-                style={{ background: 'rgba(8,6,4,0.92)', border: `1px solid ${accent}44` }}>
-                {loc.name}
-              </div>
-            </div>
-          </button>
-        ))}
-
-        {/* Zoom controls */}
-        <div className="absolute bottom-5 left-4 flex flex-col gap-1">
-          {[
-            { label: '+', fn: () => setZoom(z => Math.min(z + 0.25, 2.5)) },
-            { label: '–', fn: () => setZoom(z => Math.max(z - 0.25, 0.75)) },
-          ].map(b => (
-            <button key={b.label} onClick={b.fn}
-              className="w-7 h-7 font-mono text-sm flex items-center justify-center rounded-sm transition-colors hover:text-white"
-              style={{ background: 'rgba(8,6,4,0.88)', border: `1px solid rgba(${rgb},0.25)`, color: accent }}>
-              {b.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Scale bar */}
-        <div className="absolute bottom-5 left-16 flex items-center gap-2">
-          <div className="h-px w-14" style={{ background: `${accent}88` }} />
-          <p className="font-mono text-[7px] text-white/25">200 km</p>
-        </div>
-
-        {/* Filter legend */}
-        <div className="absolute bottom-5 right-[304px] flex items-center gap-2">
-          {filters.map(f => (
-            <button key={f} onClick={() => setFilter(f)}
-              className="font-mono text-[7px] tracking-[0.2em] uppercase px-2 py-1 rounded-sm transition-all duration-150"
-              style={{
-                background: filter === f ? `rgba(${rgb},0.18)` : 'rgba(8,6,4,0.7)',
-                border: `1px solid ${filter === f ? accent + '66' : 'rgba(180,140,60,0.15)'}`,
-                color: filter === f ? accent : 'rgba(255,255,255,0.3)',
-              }}>
-              {f === 'All' ? '● Cities' : f === 'Stronghold' ? '■ Strongholds' : f === 'Landmark' ? '◆ Landmarks' : `▲ ${f}`}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Right info panel */}
-      <div className="w-72 shrink-0 border-l border-[#b48c3c]/15 flex flex-col">
-        {/* Selected location header */}
-        <div className="relative h-36 overflow-hidden shrink-0">
-          <img src={data.locations?.find((l: any) => l.name.toLowerCase().includes(selected.id)) ?.image || data.backdrop}
-            alt={selected.name}
+      {/* ══ MAP CANVAS ══ */}
+      <div
+        ref={mapRef}
+        className="flex-1 relative overflow-hidden select-none"
+        style={{ cursor: isDragging.current ? 'grabbing' : 'grab' }}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+      >
+        {/* ── Base map image ── */}
+        <div
+          className="absolute inset-0"
+          style={{
+            transform: `scale(${zoom}) translate(${panX / zoom}px, ${panY / zoom}px)`,
+            transformOrigin: 'center center',
+            transition: isDragging.current ? 'none' : 'transform 0.25s ease',
+          }}
+        >
+          {/* Illustrated map — full brightness like the reference */}
+          <img
+            src="/Images/middle_earth_rivendell.png"
+            alt="Middle-earth Map"
             className="absolute inset-0 w-full h-full object-cover"
-            style={{ filter: 'brightness(0.5) saturate(0.7)' }} />
-          <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(8,6,4,1) 0%, transparent 60%)' }} />
-          <button className="absolute top-2.5 right-2.5 w-5 h-5 flex items-center justify-center text-white/40 hover:text-white font-mono text-xs"
-            style={{ background: 'rgba(8,6,4,0.7)' }}>✕</button>
-          <div className="absolute bottom-3 left-4">
-            <p className="font-mono text-[7px] tracking-[0.3em] uppercase mb-0.5" style={{ color: accent + 'aa' }}>{selected.region}</p>
-            <h3 className="text-[15px] font-semibold text-white" style={{ fontFamily: "'Cinzel', serif" }}>{selected.name}</h3>
+            style={{ filter: 'brightness(0.78) saturate(1.15) contrast(1.05)', willChange: 'transform' }}
+          />
+
+          {/* Atmospheric edge vignette */}
+          <div className="absolute inset-0 pointer-events-none" style={{
+            background: 'radial-gradient(ellipse 90% 80% at 45% 50%, transparent 50%, rgba(10,8,5,0.55) 80%, rgba(10,8,5,0.95) 100%)',
+          }} />
+
+          {/* Top cloud fade (like reference — sky bleeds in) */}
+          <div className="absolute inset-0 pointer-events-none" style={{
+            background: 'linear-gradient(to bottom, rgba(10,8,5,0.6) 0%, transparent 18%, transparent 80%, rgba(10,8,5,0.55) 100%)',
+          }} />
+
+          {/* ── Region labels ── */}
+          {REGION_LABELS.map(r => (
+            <div
+              key={r.name}
+              className="absolute pointer-events-none select-none"
+              style={{ left: `${r.x}%`, top: `${r.y}%`, transform: 'translate(-50%,-50%)', textAlign: 'center' }}
+            >
+              <p
+                className="uppercase tracking-[0.22em] leading-none text-white/80 drop-shadow-[0_1px_6px_rgba(0,0,0,0.9)]"
+                style={{
+                  fontFamily: "'Cinzel', Georgia, serif",
+                  fontSize: r.size,
+                  fontWeight: 600,
+                  textShadow: '0 0 20px rgba(0,0,0,0.9), 0 1px 3px rgba(0,0,0,1)',
+                }}
+              >
+                {r.name}
+              </p>
+              {r.sub && (
+                <p className="text-white/45 tracking-[0.12em] mt-0.5"
+                  style={{ fontFamily: 'Georgia, serif', fontSize: r.size * 0.62, fontStyle: 'italic', textShadow: '0 1px 4px rgba(0,0,0,0.9)' }}>
+                  {r.sub}
+                </p>
+              )}
+            </div>
+          ))}
+
+          {/* ── Location markers + always-visible labels ── */}
+          {showLocations && visibleLocs.map(loc => {
+            const isActive = selected.id === loc.id;
+            return (
+              <button
+                key={loc.id}
+                onClick={e => { e.stopPropagation(); setSelected(loc); setPanelOpen(true); }}
+                className="absolute group"
+                style={{ left: `${loc.x}%`, top: `${loc.y}%`, transform: 'translate(-50%,-50%)', zIndex: 20 }}
+              >
+                {/* Outer glow pulse on active */}
+                {isActive && (
+                  <div className="absolute inset-0 rounded-full animate-ping"
+                    style={{ width: 28, height: 28, margin: -8, background: `${accent}30` }} />
+                )}
+                {/* Marker dot */}
+                <div
+                  className="relative z-10 transition-transform duration-150 group-hover:scale-125"
+                  style={{
+                    width: isActive ? 12 : 9,
+                    height: isActive ? 12 : 9,
+                    borderRadius: '50%',
+                    background: isActive ? accent : `rgba(${rgb},0.9)`,
+                    border: `2px solid ${accent}`,
+                    boxShadow: isActive
+                      ? `0 0 0 3px ${accent}55, 0 0 18px ${accent}bb`
+                      : `0 0 8px ${accent}88`,
+                  }}
+                />
+                {/* Always-visible label below marker */}
+                <div
+                  className="absolute top-5 left-1/2 -translate-x-1/2 whitespace-nowrap pointer-events-none z-20"
+                  style={{ opacity: isActive ? 1 : 0.82 }}
+                >
+                  <p
+                    className="font-mono text-[9px] tracking-[0.1em] leading-none"
+                    style={{
+                      color: isActive ? accent : 'rgba(255,255,255,0.85)',
+                      textShadow: '0 0 8px rgba(0,0,0,1), 0 1px 3px rgba(0,0,0,1)',
+                      fontWeight: isActive ? 700 : 400,
+                    }}
+                  >
+                    {loc.name}
+                  </p>
+                </div>
+              </button>
+            );
+          })}
+        </div>{/* end transform wrapper */}
+
+        {/* ══ TOP-LEFT: VIEW dropdown ══ */}
+        <div className="absolute top-3 left-3 z-30">
+          <div className="relative">
+            <button
+              onClick={() => setViewOpen(v => !v)}
+              className="flex items-center gap-2 px-3 py-2 rounded-sm font-mono text-[8px] tracking-[0.2em] uppercase transition-colors"
+              style={{ background: 'rgba(10,8,5,0.88)', border: `1px solid rgba(${rgb},0.28)`, color: accent }}
+            >
+              <span className="text-[7px] text-white/40 tracking-[0.35em]">VIEW</span>
+              <span className="text-white/80">{view}</span>
+              <svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1 2.5L4 5.5L7 2.5" stroke="currentColor" strokeWidth="1.2"/></svg>
+            </button>
+            {viewOpen && (
+              <div className="absolute top-full mt-1 left-0 rounded-sm overflow-hidden z-50"
+                style={{ background: 'rgba(10,8,5,0.96)', border: `1px solid rgba(${rgb},0.25)`, minWidth: 110 }}>
+                {['Political','Terrain','Historical','Military'].map(v => (
+                  <button key={v} onClick={() => { setView(v); setViewOpen(false); }}
+                    className="w-full text-left px-3 py-2 font-mono text-[8px] tracking-[0.15em] transition-colors hover:bg-white/5"
+                    style={{ color: view === v ? accent : 'rgba(255,255,255,0.55)' }}>
+                    {view === v && <span className="mr-1.5">✓</span>}{v}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Description */}
-        <div className="p-4 flex flex-col gap-4 overflow-y-auto flex-1">
-          <p className="text-[11.5px] text-white/55 leading-relaxed" style={{ fontFamily: 'Georgia, serif' }}>{selected.desc}</p>
-          <GoldLine accent={accent} />
+        {/* ══ LEFT CONTROLS: Compass + Zoom + Center ══ */}
+        <div className="absolute left-3 top-1/2 -translate-y-1/2 z-30 flex flex-col items-center gap-1.5">
+          {/* Compass rose */}
+          <div className="w-9 h-9 flex items-center justify-center rounded-full mb-1"
+            style={{ background: 'rgba(10,8,5,0.88)', border: `1px solid rgba(${rgb},0.3)` }}>
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+              <circle cx="11" cy="11" r="10" stroke={accent} strokeOpacity="0.35" strokeWidth="0.8"/>
+              <polygon points="11,1 12.5,10 11,9 9.5,10" fill={accent} opacity="0.9"/>
+              <polygon points="11,21 12.5,12 11,13 9.5,12" fill="white" opacity="0.3"/>
+              <polygon points="1,11 10,12.5 9,11 10,9.5" fill="white" opacity="0.3"/>
+              <polygon points="21,11 12,12.5 13,11 12,9.5" fill="white" opacity="0.3"/>
+              <circle cx="11" cy="11" r="1.5" fill={accent} opacity="0.8"/>
+              <text x="11" y="5.5" textAnchor="middle" fill={accent} fontSize="3" fontFamily="monospace" opacity="0.9">N</text>
+            </svg>
+          </div>
+          {/* Zoom in */}
+          {[
+            { lbl: '+', fn: () => setZoom(z => Math.min(z + 0.2, 3)) },
+            { lbl: '−', fn: () => setZoom(z => Math.max(z - 0.2, 0.6)) },
+            { lbl: '⊙', fn: () => { setZoom(1); setPanX(0); setPanY(0); } },
+          ].map(b => (
+            <button key={b.lbl} onClick={b.fn}
+              className="w-8 h-8 flex items-center justify-center font-mono text-sm rounded-sm transition-all hover:scale-110"
+              style={{ background: 'rgba(10,8,5,0.88)', border: `1px solid rgba(${rgb},0.28)`, color: accent }}>
+              {b.lbl}
+            </button>
+          ))}
+        </div>
 
-          {/* Details */}
-          <div>
-            <SLabel accent={accent}>DETAILS</SLabel>
-            <div className="flex flex-col gap-2">
-              {[
-                { label: 'Type',      val: selected.type },
-                { label: 'Race',      val: selected.type === 'Stronghold' ? 'Elves' : 'Mixed' },
-                { label: 'Region',    val: selected.region },
-                { label: 'Founded',   val: 'Second Age' },
-                { label: 'Population',val: 'Unknown' },
-              ].map(d => (
-                <div key={d.label} className="flex justify-between items-baseline">
-                  <p className="font-mono text-[8px] text-white/30 tracking-wider uppercase">{d.label}</p>
-                  <p className="font-mono text-[9px] text-white/65">{d.val}</p>
-                </div>
+        {/* ══ BOTTOM-LEFT: Scale bar ══ */}
+        <div className="absolute bottom-14 left-4 z-30 flex items-end gap-0 pointer-events-none">
+          <div className="flex flex-col items-start gap-0.5">
+            <div className="flex">
+              <div className="w-14 h-1.5 border-l border-t border-b" style={{ borderColor: `${accent}cc` }} />
+              <div className="w-14 h-1.5 border" style={{ borderColor: `${accent}cc`, background: `${accent}33` }} />
+            </div>
+            <p className="font-mono text-[7px] tracking-[0.15em]" style={{ color: `${accent}99` }}>200 km</p>
+          </div>
+        </div>
+
+        {/* ══ BOTTOM-CENTER: Show Locations button ══ */}
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-30">
+          <button
+            onClick={() => setShowLocations(s => !s)}
+            className="flex items-center gap-2.5 px-5 py-2.5 rounded-sm font-mono text-[9px] tracking-[0.22em] uppercase transition-all duration-200"
+            style={{
+              background: showLocations ? `rgba(${rgb},0.18)` : 'rgba(10,8,5,0.88)',
+              border: `1px solid ${showLocations ? accent + '88' : `rgba(${rgb},0.3)`}`,
+              color: showLocations ? accent : 'rgba(255,255,255,0.5)',
+              boxShadow: showLocations ? `0 0 14px ${accent}33` : 'none',
+            }}
+          >
+            SHOW LOCATIONS
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+              <path d={showLocations ? 'M2 6.5L5 3.5L8 6.5' : 'M2 3.5L5 6.5L8 3.5'} stroke="currentColor" strokeWidth="1.4"/>
+            </svg>
+          </button>
+        </div>
+
+        {/* ══ BOTTOM-RIGHT: Filter legend ══ */}
+        <div className="absolute bottom-3 right-3 z-30 flex items-center gap-1.5"
+          style={{ right: panelOpen ? 'calc(var(--panel-w, 19rem) + 12px)' : 12 }}>
+          <div className="flex items-center gap-1 px-3 py-2 rounded-sm"
+            style={{ background: 'rgba(10,8,5,0.88)', border: `1px solid rgba(${rgb},0.22)` }}>
+            {filterDefs.map(f => (
+              <button key={f.id} onClick={() => toggleFilter(f.id)}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-sm font-mono text-[8px] tracking-[0.15em] transition-all duration-150"
+                style={{
+                  background: activeFilters.includes(f.id) ? `rgba(${rgb},0.15)` : 'transparent',
+                  color: activeFilters.includes(f.id) ? accent : 'rgba(255,255,255,0.35)',
+                }}>
+                <span style={{ color: activeFilters.includes(f.id) ? accent : 'rgba(255,255,255,0.25)', fontSize: 9 }}>{f.icon}</span>
+                {f.id}
+              </button>
+            ))}
+            <div className="w-px h-4 mx-1 bg-white/10" />
+            <button className="flex items-center gap-1 px-1 text-white/25 hover:text-white/50 transition-colors">
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 7.5L5 4.5L8 7.5" stroke="currentColor" strokeWidth="1.3"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>{/* end map canvas */}
+
+      {/* ══ RIGHT PANEL ══ */}
+      {panelOpen && (
+        <div className="w-72 shrink-0 flex flex-col border-l"
+          style={{ background: 'rgba(8,6,4,0.97)', borderColor: `rgba(${rgb},0.18)` }}>
+
+          {/* Panel header with close button */}
+          <div className="flex items-start justify-between p-4 pb-0">
+            <div className="flex-1 min-w-0 pr-2">
+              <p className="font-mono text-[7px] tracking-[0.35em] uppercase mb-1" style={{ color: `${accent}99` }}>
+                {panelLoc.region}
+              </p>
+              <h3 className="text-[17px] font-semibold leading-tight text-white uppercase tracking-[0.08em]"
+                style={{ fontFamily: "'Cinzel', serif" }}>
+                {panelLoc.name}
+              </h3>
+              <p className="font-mono text-[7.5px] tracking-[0.2em] mt-0.5" style={{ color: `${accent}77` }}>
+                {PLACE_LABELS.find(p => p.name === panelLoc.name) ? panelLoc.region + ', ' : ''}{panelLoc.region}
+              </p>
+            </div>
+            <button onClick={() => setPanelOpen(false)}
+              className="w-6 h-6 flex items-center justify-center rounded-sm text-white/30 hover:text-white/70 font-mono text-xs transition-colors shrink-0 mt-0.5"
+              style={{ border: '1px solid rgba(255,255,255,0.1)' }}>✕</button>
+          </div>
+
+          {/* Location image */}
+          <div className="relative mx-3 mt-3 rounded-sm overflow-hidden" style={{ height: 130 }}>
+            <img
+              src={panelLoc.img || data.backdrop}
+              alt={panelLoc.name}
+              className="w-full h-full object-cover"
+              style={{ filter: 'brightness(0.72) saturate(1.1)' }}
+            />
+            <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(8,6,4,0.55) 0%, transparent 60%)' }} />
+            <div className="absolute inset-0 rounded-sm" style={{ border: `1px solid rgba(${rgb},0.25)` }} />
+          </div>
+
+          {/* Description + details */}
+          <div className="flex flex-col gap-3.5 p-4 overflow-y-auto flex-1" style={{ scrollbarWidth: 'none' }}>
+            <p className="text-[11px] leading-relaxed text-white/55" style={{ fontFamily: 'Georgia, serif' }}>
+              {panelLoc.desc}
+            </p>
+
+            <GoldLine accent={accent} />
+
+            {/* Details grid */}
+            <div>
+              <SLabel accent={accent}>DETAILS</SLabel>
+              <div className="flex flex-col gap-2">
+                {[
+                  { icon: '○', label: 'Type',       val: panelLoc.type },
+                  { icon: '◈', label: 'Races',      val: panelLoc.races },
+                  { icon: '✦', label: 'Government', val: panelLoc.govt },
+                  { icon: '⊕', label: 'First Age',  val: panelLoc.age },
+                  { icon: '⬡', label: 'Area',       val: panelLoc.area },
+                ].map(d => (
+                  <div key={d.label} className="flex items-baseline gap-2">
+                    <span className="text-[8px] w-3 shrink-0" style={{ color: `${accent}66` }}>{d.icon}</span>
+                    <p className="font-mono text-[7.5px] text-white/30 tracking-wider uppercase w-20 shrink-0">{d.label}</p>
+                    <p className="font-mono text-[8px] text-white/65 truncate">{d.val}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <GoldLine accent={accent} />
+
+            {/* Important locations */}
+            <div>
+              <SLabel accent={accent}>IMPORTANT LOCATIONS</SLabel>
+              <div className="flex flex-col gap-1.5">
+                {panelLoc.locations.map((loc, i) => (
+                  <div key={loc} className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full border shrink-0"
+                      style={{ borderColor: i === 0 ? accent : `${accent}44`, background: i === 0 ? accent : 'transparent' }} />
+                    <p className="font-mono text-[8.5px] text-white/55">{loc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* View full entry button */}
+            <button className="w-full flex items-center justify-between px-4 py-2.5 rounded-sm font-mono text-[8px] tracking-[0.22em] uppercase transition-all duration-200 hover:bg-white/5 mt-auto"
+              style={{ border: `1px solid rgba(${rgb},0.25)`, color: accent }}>
+              VIEW FULL ENTRY
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M3 2L7 5L3 8" stroke="currentColor" strokeWidth="1.4"/></svg>
+            </button>
+          </div>
+
+          {/* Divider + location list */}
+          <div className="border-t px-3 pt-3 pb-2 shrink-0" style={{ borderColor: `rgba(${rgb},0.15)` }}>
+            <div className="flex flex-col gap-0.5 max-h-36 overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
+              {MAP_LOCATIONS.map(loc => (
+                <button key={loc.id} onClick={() => setSelected(loc)}
+                  className="flex items-center gap-2.5 px-2 py-1.5 rounded-sm text-left transition-all group"
+                  style={{ background: selected.id === loc.id ? `rgba(${rgb},0.14)` : 'transparent' }}>
+                  <div className="w-1.5 h-1.5 rounded-full shrink-0 transition-colors"
+                    style={{ background: selected.id === loc.id ? accent : `${accent}44` }} />
+                  <span className="font-mono text-[8px] tracking-wider text-white/55 group-hover:text-white/80 transition-colors flex-1 truncate">{loc.name}</span>
+                  <span className="font-mono text-[7px] text-white/20 shrink-0">{loc.type}</span>
+                </button>
               ))}
             </div>
           </div>
-
-          <button className="w-full py-2 font-mono text-[7.5px] tracking-[0.25em] uppercase border rounded-sm transition-colors hover:bg-[#b48c3c]/10"
-            style={{ borderColor: accent + '44', color: accent }}>
-            VIEW DETAILS ›
-          </button>
         </div>
+      )}
 
-        {/* Location list */}
-        <div className="border-t border-[#b48c3c]/12 p-3">
-          <SLabel accent={accent}>LOCATIONS</SLabel>
-          <div className="flex flex-col gap-0.5 max-h-40 overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
-            {MAP_LOCATIONS.map(loc => (
-              <button key={loc.id} onClick={() => setSelected(loc)}
-                className="flex items-center gap-2.5 px-2 py-1.5 rounded-sm text-left transition-colors group"
-                style={{ background: selected.id === loc.id ? `rgba(${rgb},0.12)` : 'transparent' }}>
-                <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: selected.id === loc.id ? accent : 'rgba(180,140,60,0.3)' }} />
-                <span className="font-mono text-[8.5px] tracking-wider text-white/55 group-hover:text-white/80 transition-colors truncate">{loc.name}</span>
-                <span className="ml-auto font-mono text-[7px] text-white/20 shrink-0">{loc.type}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
+      {/* Re-open panel button when closed */}
+      {!panelOpen && (
+        <button onClick={() => setPanelOpen(true)}
+          className="absolute right-2 top-1/2 -translate-y-1/2 z-30 w-6 h-16 flex items-center justify-center rounded-sm transition-colors hover:bg-white/5"
+          style={{ background: 'rgba(10,8,5,0.88)', border: `1px solid rgba(${rgb},0.25)`, color: accent }}>
+          ‹
+        </button>
+      )}
     </div>
   );
 }
