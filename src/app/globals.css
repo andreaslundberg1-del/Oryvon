@@ -24,9 +24,19 @@
   --font-arcade: var(--font-arcade);
 }
 
-@media (pointer: fine) {
+@media (pointer: fine) and (hover: hover) {
   *, *::before, *::after {
     cursor: none !important;
+  }
+}
+
+@media (pointer: coarse) {
+  *, *::before, *::after {
+    cursor: auto !important;
+  }
+  button, a, input, select, textarea, [role="button"] {
+    cursor: pointer !important;
+    touch-action: manipulation;
   }
 }
 

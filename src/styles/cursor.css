@@ -223,13 +223,15 @@ body[data-cursor-effects~="cinematic-smooth"] .oryvon-cursor {
 }
 
 /* ── Hover States on Interactive Elements ── */
-body.cursor-custom a,
-body.cursor-custom button,
-body.cursor-custom input,
-body.cursor-custom textarea,
-body.cursor-custom select,
-body.cursor-custom [role="button"] {
-  cursor: none !important;
+@media (pointer: fine) and (hover: hover) {
+  body.cursor-custom a,
+  body.cursor-custom button,
+  body.cursor-custom input,
+  body.cursor-custom textarea,
+  body.cursor-custom select,
+  body.cursor-custom [role="button"] {
+    cursor: none !important;
+  }
 }
 
 body.cursor-custom a:hover ~ .oryvon-cursor,

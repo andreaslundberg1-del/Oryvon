@@ -59,7 +59,10 @@ export default function AdminLogin() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+              inputMode="email"
               className="bg-black/80 border border-white/10 rounded-lg py-3 px-4 font-mono text-[11px] text-white focus:outline-none focus:border-amber-500/50 transition-colors"
+              style={{ touchAction: 'manipulation' }}
               required
             />
           </div>
@@ -70,7 +73,9 @@ export default function AdminLogin() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
               className="bg-black/80 border border-white/10 rounded-lg py-3 px-4 font-mono text-[11px] text-white focus:outline-none focus:border-amber-500/50 transition-colors"
+              style={{ touchAction: 'manipulation' }}
               required
             />
           </div>
@@ -85,6 +90,7 @@ export default function AdminLogin() {
             type="submit"
             disabled={loading}
             className="mt-4 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/50 text-amber-400 py-3 rounded-lg font-mono text-[10px] tracking-widest uppercase transition-all duration-300 disabled:opacity-50"
+            style={{ touchAction: 'manipulation', minHeight: '48px' }}
           >
             {loading ? "VERIFYING..." : "INITIALIZE UPLINK"}
           </button>
