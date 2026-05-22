@@ -201,6 +201,7 @@ function MapTab({ data, accent, rgb }: { data: any; accent: string; rgb: string 
   const [activeFilters, setActiveFilters] = useState<string[]>(['Cities','Strongholds','Landmarks','Regions']);
   const [showLocations, setShowLocations] = useState(true);
   const [panelOpen, setPanelOpen] = useState(true);
+  const [isDraggingState, setIsDraggingState] = useState(false);
   const isDragging = useRef(false);
   const dragStart = useRef({ x: 0, y: 0, px: 0, py: 0 });
   const mapRef = useRef<HTMLDivElement>(null);
@@ -222,6 +223,7 @@ function MapTab({ data, accent, rgb }: { data: any; accent: string; rgb: string 
 
   const handleMouseDown = (e: React.MouseEvent) => {
     isDragging.current = true;
+    setIsDraggingState(true);
     dragStart.current = { x: e.clientX, y: e.clientY, px: panX, py: panY };
   };
   const handleMouseMove = (e: React.MouseEvent) => {
@@ -229,7 +231,7 @@ function MapTab({ data, accent, rgb }: { data: any; accent: string; rgb: string 
     setPanX(dragStart.current.px + (e.clientX - dragStart.current.x));
     setPanY(dragStart.current.py + (e.clientY - dragStart.current.y));
   };
-  const handleMouseUp = () => { isDragging.current = false; };
+  const handleMouseUp = () => { isDragging.current = false; setIsDraggingState(false); };
 
   const panelLoc = selected;
 
@@ -240,7 +242,7 @@ function MapTab({ data, accent, rgb }: { data: any; accent: string; rgb: string 
       <div
         ref={mapRef}
         className="flex-1 relative overflow-hidden select-none"
-        style={{ cursor: isDragging.current ? 'grabbing' : 'grab' }}
+        style={{ cursor: isDraggingState ? 'grabbing' : 'grab' }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
@@ -252,7 +254,7 @@ function MapTab({ data, accent, rgb }: { data: any; accent: string; rgb: string 
           style={{
             transform: `scale(${zoom}) translate(${panX / zoom}px, ${panY / zoom}px)`,
             transformOrigin: 'center center',
-            transition: isDragging.current ? 'none' : 'transform 0.25s ease',
+            transition: isDraggingState ? 'none' : 'transform 0.25s ease',
           }}
         >
           {/* Illustrated map — full brightness like the reference */}
@@ -579,158 +581,376 @@ function MapTab({ data, accent, rgb }: { data: any; accent: string; rgb: string 
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-//  CHARACTERS TAB
+//  CHARACTERS TAB  — Interactive Character Archive
 // ══════════════════════════════════════════════════════════════════════════════
+
+// Extended LOTR roster — supplements whatever is in data.characters
+const LOTR_EXTRA_CHARS = [
+  { id:'aragorn',  name:'Aragorn',   race:'Man',    faction:'Fellowship', role:'Ranger / King of Gondor', status:'Alive', actor:'Viggo Mortensen',  appearance:'The Fellowship of the Ring', filter:'Men',      img:'/Images/gandalf_portrait.png', desc:'Heir of Isildur and rightful King of Gondor, raised in secret as Strider. A Ranger of the North, he led the Fellowship and claimed the throne after the War of the Ring.' },
+  { id:'gandalf',  name:'Gandalf',   race:'Maia',   faction:'Fellowship', role:'Wizard / Istari',         status:'Alive', actor:'Ian McKellen',      appearance:'The Fellowship of the Ring', filter:'Men',      img:'/Images/gandalf_portrait.png', desc:'One of the five Istari, Gandalf the Grey became Gandalf the White after his death and resurrection. Instrumental in guiding the Fellowship and igniting the fires of resistance.' },
+  { id:'frodo',    name:'Frodo',     race:'Hobbit', faction:'Fellowship', role:'Ring-bearer',              status:'Alive', actor:'Elijah Wood',       appearance:'The Fellowship of the Ring', filter:'Hobbits',  img:'/Images/gandalf_portrait.png', desc:'Frodo Baggins of the Shire bore the One Ring from Bag End to the fires of Mount Doom. His courage, tested beyond all measure, ultimately saved Middle-earth.' },
+  { id:'sam',      name:'Samwise',   race:'Hobbit', faction:'Fellowship', role:'Gardener / Ring-bearer',   status:'Alive', actor:'Sean Astin',        appearance:'The Fellowship of the Ring', filter:'Hobbits',  img:'/Images/gandalf_portrait.png', desc:'Samwise Gamgee, loyal companion to Frodo, carried both the Ring-bearer and his hope when strength failed. His love of the Shire sustained him through Mordor itself.' },
+  { id:'legolas',  name:'Legolas',   race:'Elf',    faction:'Fellowship', role:'Prince of Mirkwood',       status:'Alive', actor:'Orlando Bloom',     appearance:'The Fellowship of the Ring', filter:'Elves',    img:'/Images/gandalf_portrait.png', desc:'Prince of the Woodland Realm, Legolas joined the Fellowship as its Elven representative. His elven sight, archery, and bond with Gimli became legendary across Middle-earth.' },
+  { id:'gimli',    name:'Gimli',     race:'Dwarf',  faction:'Fellowship', role:'Son of Glóin',             status:'Alive', actor:'John Rhys-Davies',  appearance:'The Fellowship of the Ring', filter:'Dwarves',  img:'/Images/gandalf_portrait.png', desc:'Gimli son of Glóin represented the Dwarves of Erebor in the Fellowship. Fierce in battle, his unlikely friendship with Legolas bridged the ancient rift between Elves and Dwarves.' },
+  { id:'boromir',  name:'Boromir',   race:'Man',    faction:'Fellowship', role:'Captain of Gondor',        status:'Fallen',actor:'Sean Bean',          appearance:'The Fellowship of the Ring', filter:'Men',      img:'/Images/gandalf_portrait.png', desc:'Eldest son of Denethor and Captain of Gondor\'s forces, Boromir fell under the Ring\'s influence but redeemed himself defending Merry and Pippin at Amon Hen.' },
+  { id:'galadriel',name:'Galadriel', race:'Elf',    faction:'Lothlórien', role:'Lady of the Golden Wood',  status:'Sailed',actor:'Cate Blanchett',     appearance:'The Fellowship of the Ring', filter:'Elves',    img:'/Images/gandalf_portrait.png', desc:'The mightiest of the remaining Elves in Middle-earth, Galadriel was keeper of Nenya, the Ring of Water. She tested each member of the Fellowship and provided crucial gifts for their quest.' },
+  { id:'elrond',   name:'Elrond',    race:'Half-elf',faction:'Rivendell', role:'Lord of Rivendell',        status:'Sailed',actor:'Hugo Weaving',       appearance:'The Fellowship of the Ring', filter:'Elves',    img:'/Images/gandalf_portrait.png', desc:'Elrond Half-elven, Lord of Rivendell, held the Ring of Air, Vilya. He hosted the Council where the fate of the Ring was decided, and forged Andúril for Aragorn.' },
+  { id:'sauron',   name:'Sauron',    race:'Maia',   faction:'Mordor',     role:'Dark Lord',                status:'Destroyed',actor:'Sala Baker',      appearance:'The Fellowship of the Ring', filter:'Villains', img:'/Images/gandalf_portrait.png', desc:'The Dark Lord Sauron forged the One Ring in the fires of Mount Doom to dominate all of Middle-earth. Though defeated by the Last Alliance, he rebuilt his power over millennia.' },
+  { id:'saruman',  name:'Saruman',   race:'Maia',   faction:'Isengard',   role:'Wizard / Traitor',         status:'Destroyed',actor:'Christopher Lee', appearance:'The Fellowship of the Ring', filter:'Villains', img:'/Images/gandalf_portrait.png', desc:'Saruman the White, head of the Istari order, was corrupted by his study of Sauron\'s arts. He betrayed the Council of the Wise and built an army at Isengard before his downfall at Orthanc.' },
+  { id:'gollum',   name:'Gollum',    race:'Hobbit', faction:'None',       role:'Former Ring-bearer',       status:'Destroyed',actor:'Andy Serkis',     appearance:'The Fellowship of the Ring', filter:'Villains', img:'/Images/gandalf_portrait.png', desc:'Sméagol, once a Stoor Hobbit, was consumed by the One Ring over five centuries. As Gollum he guided Frodo and Sam through Emyn Muil into Mordor, and ultimately fulfilled the Ring\'s destruction.' },
+  { id:'arwen',    name:'Arwen',     race:'Elf',    faction:'Rivendell',  role:'Evenstar of her people',   status:'Alive', actor:'Liv Tyler',         appearance:'The Fellowship of the Ring', filter:'Elves',    img:'/Images/gandalf_portrait.png', desc:'Arwen Undómiel, daughter of Elrond, chose a mortal life to be with Aragorn. Known as the Evenstar, she forged the standard of the King and surrendered her immortality for love.' },
+  { id:'faramir',  name:'Faramir',   race:'Man',    faction:'Gondor',     role:'Captain of Ithilien',      status:'Alive', actor:'David Wenham',      appearance:'The Two Towers',             filter:'Men',      img:'/Images/gandalf_portrait.png', desc:'Faramir, younger son of Denethor, was the just and wise captain of Gondor\'s rangers in Ithilien. Unlike his brother, he resisted the Ring\'s temptation and aided Frodo\'s quest.' },
+  { id:'eowyn',    name:'Éowyn',     race:'Man',    faction:'Rohan',      role:'Shieldmaiden of Rohan',    status:'Alive', actor:'Miranda Otto',      appearance:'The Two Towers',             filter:'Men',      img:'/Images/gandalf_portrait.png', desc:'Éowyn, niece of King Théoden, disguised herself as a Rider of Rohan to fight at Pelennor Fields. She slew the Witch-king of Angmar, fulfilling the prophecy that "no man" could kill him.' },
+  { id:'theoden',  name:'Théoden',   race:'Man',    faction:'Rohan',      role:'King of Rohan',            status:'Fallen',actor:'Bernard Hill',      appearance:'The Two Towers',             filter:'Men',      img:'/Images/gandalf_portrait.png', desc:'Théoden King of Rohan was enslaved by Saruman through Gríma Wormtongue before being freed by Gandalf. He rode to Gondor\'s aid and fell heroically at the Battle of Pelennor Fields.' },
+];
+
+const CHAR_FILTERS = ['All','Fellowship','Elves','Men','Hobbits','Dwarves','Villains'];
+const CHAR_SORTS   = ['Name','Race','Faction','Status'];
+
 function CharactersTab({ data, accent, rgb }: { data: any; accent: string; rgb: string }) {
-  const chars = data.characters || [];
+  // Merge registry chars with extended LOTR roster, deduplicate by id
+  const registryChars = (data.characters || []) as any[];
+  const merged = [...LOTR_EXTRA_CHARS.map(e => {
+    const reg = registryChars.find((r: any) => r.id === e.id || r.name.toLowerCase() === e.name.toLowerCase());
+    return reg ? { ...e, ...reg, filter: e.filter, actor: e.actor, appearance: e.appearance, filter2: e.filter } : e;
+  })];
+
   const [search, setSearch] = useState('');
-  const [active, setActive] = useState(chars[0] ?? null);
-  const [subTab, setSubTab] = useState<'about' | 'relationships' | 'appearance' | 'abilities' | 'events' | 'quotes'>('about');
-  const filtered = chars.filter((c: any) => c.name.toLowerCase().includes(search.toLowerCase()));
+  const [filterGroup, setFilterGroup] = useState('All');
+  const [sortBy, setSortBy] = useState('Name');
+  const [active, setActive] = useState<any>(merged[0]);
+  const [subTab, setSubTab] = useState<'about'|'abilities'|'quotes'|'relationships'>('about');
+
+  const displayed = merged
+    .filter(c => filterGroup === 'All' || c.filter === filterGroup)
+    .filter(c => !search || c.name.toLowerCase().includes(search.toLowerCase()) || c.race?.toLowerCase().includes(search.toLowerCase()))
+    .sort((a, b) => {
+      if (sortBy === 'Name')    return a.name.localeCompare(b.name);
+      if (sortBy === 'Race')    return (a.race||'').localeCompare(b.race||'');
+      if (sortBy === 'Faction') return (a.faction||'').localeCompare(b.faction||'');
+      if (sortBy === 'Status')  return (a.status||'').localeCompare(b.status||'');
+      return 0;
+    });
+
+  const statusColor = (s: string) => {
+    if (!s) return 'rgba(255,255,255,0.3)';
+    if (s === 'Alive')    return '#4ade80';
+    if (s === 'Fallen')   return '#f87171';
+    if (s === 'Sailed')   return '#93c5fd';
+    return '#fbbf24';
+  };
 
   return (
-    <div className="flex h-full">
-      {/* Left character list */}
-      <div className="w-52 shrink-0 border-r border-[#b48c3c]/15 flex flex-col">
-        <div className="p-3 border-b border-[#b48c3c]/12">
-          <p className="font-mono text-[7.5px] tracking-[0.3em] uppercase text-white/30 mb-2">◂ CHARACTERS</p>
+    <div className="flex h-full overflow-hidden" style={{ background: '#0a0806' }}>
+
+      {/* ══ LEFT: Filter + Character Grid ══ */}
+      <div className="flex flex-col border-r" style={{ width: 320, borderColor: `rgba(${rgb},0.15)` }}>
+
+        {/* Search + sort bar */}
+        <div className="p-3 border-b flex flex-col gap-2" style={{ borderColor: `rgba(${rgb},0.12)` }}>
           <div className="relative">
-            <input value={search} onChange={e => setSearch(e.target.value)}
-              placeholder="Search characters..."
-              className="w-full bg-[#0d0b08] border rounded-sm px-2.5 py-1.5 font-mono text-[9px] text-white/60 placeholder-white/20 outline-none"
-              style={{ borderColor: `rgba(${rgb},0.2)` }} />
-            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-white/25 text-[10px]">⌕</span>
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search characters…"
+              className="w-full rounded-sm px-3 py-2 font-mono text-[9px] text-white/65 placeholder-white/20 outline-none"
+              style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid rgba(${rgb},0.2)` }}
+            />
+            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/20 text-[11px]">⌕</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="font-mono text-[6.5px] tracking-[0.3em] uppercase text-white/20 shrink-0">SORT</span>
+            <div className="flex gap-1 flex-1">
+              {CHAR_SORTS.map(s => (
+                <button key={s} onClick={() => setSortBy(s)}
+                  className="flex-1 py-1 rounded-sm font-mono text-[7px] tracking-[0.1em] transition-all"
+                  style={{
+                    background: sortBy === s ? `rgba(${rgb},0.2)` : 'transparent',
+                    border: `1px solid ${sortBy === s ? accent + '66' : 'rgba(255,255,255,0.06)'}`,
+                    color: sortBy === s ? accent : 'rgba(255,255,255,0.3)',
+                  }}>
+                  {s}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
-        <p className="font-mono text-[7px] tracking-[0.25em] uppercase text-white/25 px-3 pt-3 pb-1.5">FEATURED CHARACTERS</p>
-        <div className="flex flex-col overflow-y-auto flex-1" style={{ scrollbarWidth: 'none' }}>
-          {filtered.map((char: any) => (
-            <button key={char.id} onClick={() => { setActive(char); setSubTab('about'); }}
-              className="flex items-center gap-2.5 px-3 py-2.5 text-left transition-colors border-b"
+
+        {/* Filter tabs */}
+        <div className="flex flex-wrap gap-1 px-3 py-2.5 border-b" style={{ borderColor: `rgba(${rgb},0.1)` }}>
+          {CHAR_FILTERS.map(f => (
+            <button key={f} onClick={() => setFilterGroup(f)}
+              className="px-2.5 py-1 rounded-sm font-mono text-[7.5px] tracking-[0.12em] uppercase transition-all duration-150"
               style={{
-                background: active?.id === char.id ? `rgba(${rgb},0.14)` : 'transparent',
-                borderColor: 'rgba(180,140,60,0.08)',
-                borderLeft: active?.id === char.id ? `2px solid ${accent}` : '2px solid transparent',
+                background: filterGroup === f ? `rgba(${rgb},0.22)` : 'rgba(255,255,255,0.03)',
+                border: `1px solid ${filterGroup === f ? accent + '77' : 'rgba(255,255,255,0.06)'}`,
+                color: filterGroup === f ? accent : 'rgba(255,255,255,0.38)',
               }}>
-              <div className="w-7 h-7 rounded-sm overflow-hidden shrink-0">
-                <img src={char.image || '/Images/gandalf_portrait.png'} alt={char.name}
-                  className="w-full h-full object-cover" style={{ filter: 'brightness(0.75)' }} />
-              </div>
-              <div className="min-w-0">
-                <p className="font-mono text-[9px] text-white/80 truncate font-medium">{char.name}</p>
-                <p className="font-mono text-[7px] truncate" style={{ color: accent + '99' }}>{char.role?.split(',')[0]}</p>
-              </div>
+              {f}
             </button>
           ))}
         </div>
-        <div className="border-t border-[#b48c3c]/12 p-3">
-          <button className="w-full font-mono text-[7.5px] tracking-[0.25em] uppercase text-white/25 hover:text-white/60 transition-colors">
-            VIEW ALL CHARACTERS ›
-          </button>
+
+        {/* Count label */}
+        <div className="px-3 py-1.5 flex items-center justify-between">
+          <p className="font-mono text-[6.5px] tracking-[0.3em] uppercase text-white/20">
+            {displayed.length} CHARACTER{displayed.length !== 1 ? 'S' : ''}
+          </p>
+          <p className="font-mono text-[6.5px] text-white/15 tracking-wider">MIDDLE-EARTH ARCHIVE</p>
+        </div>
+
+        {/* Character grid — 2 columns of portrait cards */}
+        <div className="flex-1 overflow-y-auto px-2.5 pb-3" style={{ scrollbarWidth: 'none' }}>
+          <div className="grid grid-cols-2 gap-2">
+            {displayed.map(char => {
+              const isActive = active?.id === char.id;
+              return (
+                <button
+                  key={char.id}
+                  onClick={() => { setActive(char); setSubTab('about'); }}
+                  className="flex flex-col text-left rounded-sm overflow-hidden transition-all duration-150 group relative"
+                  style={{
+                    background: isActive ? `rgba(${rgb},0.16)` : 'rgba(255,255,255,0.03)',
+                    border: `1px solid ${isActive ? accent + '77' : 'rgba(255,255,255,0.07)'}`,
+                    boxShadow: isActive ? `0 0 14px ${accent}22` : 'none',
+                  }}
+                >
+                  {/* Portrait */}
+                  <div className="relative w-full overflow-hidden" style={{ height: 96 }}>
+                    <img
+                      src={char.image || char.img || '/Images/gandalf_portrait.png'}
+                      alt={char.name}
+                      className="w-full h-full object-cover object-top transition-transform duration-300 group-hover:scale-105"
+                      style={{ filter: isActive ? 'brightness(0.72) saturate(1.1)' : 'brightness(0.6) saturate(0.85)' }}
+                    />
+                    <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(10,8,6,0.92) 0%, transparent 55%)' }} />
+                    {/* Status dot */}
+                    <div className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full border border-black/40"
+                      style={{ background: statusColor(char.status) }} />
+                    {/* Active indicator */}
+                    {isActive && (
+                      <div className="absolute bottom-0 left-0 right-0 h-[2px]" style={{ background: accent }} />
+                    )}
+                  </div>
+                  {/* Info */}
+                  <div className="px-2 py-1.5">
+                    <p className="font-mono text-[9.5px] font-semibold text-white/85 leading-tight truncate"
+                      style={{ color: isActive ? accent : undefined }}>
+                      {char.name}
+                    </p>
+                    <p className="font-mono text-[7px] text-white/35 truncate mt-0.5">{char.race}</p>
+                    <p className="font-mono text-[6.5px] truncate mt-0.5" style={{ color: `${accent}88` }}>
+                      {char.faction}
+                    </p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
-      {/* Center hero */}
+      {/* ══ RIGHT: Character Detail ══ */}
       {active && (
-        <div className="flex-1 relative overflow-hidden">
-          <img src={active.image || '/Images/gandalf_portrait.png'} alt={active.name}
-            className="absolute inset-0 w-full h-full object-cover object-top"
-            style={{ filter: 'brightness(0.5) saturate(0.75)' }} />
-          <div className="absolute inset-0" style={{ background: 'linear-gradient(to right, rgba(8,6,4,0.7) 0%, transparent 35%, transparent 65%, rgba(8,6,4,0.85) 100%)' }} />
-          <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(8,6,4,0.98) 0%, transparent 50%)' }} />
-          <div className="absolute inset-0" style={{ background: `radial-gradient(ellipse at 40% 30%, ${accent}10 0%, transparent 60%)` }} />
+        <div className="flex-1 flex min-w-0 overflow-hidden">
 
-          {/* Name + subtitle */}
-          <div className="absolute bottom-0 left-0 right-0 p-6">
-            <p className="font-mono text-[8px] tracking-[0.35em] uppercase mb-1" style={{ color: accent }}>{active.role}</p>
-            <h2 className="text-[36px] font-bold text-white leading-none mb-1.5 uppercase"
-              style={{ fontFamily: "'Cinzel', serif", textShadow: `0 0 60px ${accent}44` }}>
-              {active.name.toUpperCase()}
-            </h2>
-            <p className="text-[11px] text-white/45 italic mb-4" style={{ fontFamily: 'Georgia, serif' }}>
-              &ldquo;{active.quote || active.tabs?.quotes?.split('·')[0]?.trim()?.replace(/^"|"$/g, '')}&rdquo;
-            </p>
+          {/* ── Center: portrait + identity + tabs ── */}
+          <div className="flex flex-col flex-1 overflow-y-auto min-w-0" style={{ scrollbarWidth: 'none' }}>
 
-            {/* Stats row */}
-            <div className="flex flex-wrap gap-x-6 gap-y-1.5 mb-5">
-              {Object.entries(active.stats || {}).slice(0, 6).map(([k, v]) => (
-                <div key={k}>
-                  <p className="font-mono text-[7px] uppercase tracking-widest text-white/30">{k}</p>
-                  <p className="font-mono text-[10px] text-white/75">{v as string}</p>
+            {/* Hero strip — medium height, not full screen */}
+            <div className="relative shrink-0 overflow-hidden" style={{ height: 220 }}>
+              <img
+                src={active.image || active.img || '/Images/gandalf_portrait.png'}
+                alt={active.name}
+                className="absolute inset-0 w-full h-full object-cover object-top"
+                style={{ filter: 'brightness(0.55) saturate(0.9)' }}
+              />
+              <div className="absolute inset-0" style={{
+                background: 'linear-gradient(to bottom, rgba(10,8,6,0.15) 0%, transparent 30%, transparent 50%, rgba(10,8,6,0.98) 100%)',
+              }} />
+              <div className="absolute inset-0" style={{
+                background: `radial-gradient(ellipse at 30% 50%, ${accent}0a 0%, transparent 65%)`,
+              }} />
+              {/* Identity overlay at bottom of strip */}
+              <div className="absolute bottom-0 left-0 right-0 px-6 pb-4 flex items-end gap-5">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <p className="font-mono text-[7px] tracking-[0.38em] uppercase" style={{ color: accent }}>
+                      {active.race}
+                    </p>
+                    <div className="h-px flex-1" style={{ background: `${accent}33` }} />
+                    <div className="flex items-center gap-1">
+                      <div className="w-1.5 h-1.5 rounded-full" style={{ background: statusColor(active.status) }} />
+                      <p className="font-mono text-[7px] text-white/40">{active.status}</p>
+                    </div>
+                  </div>
+                  <h2 className="text-[30px] font-bold leading-none text-white uppercase tracking-[0.06em]"
+                    style={{ fontFamily: "'Cinzel', serif", textShadow: `0 0 40px ${accent}44` }}>
+                    {active.name}
+                  </h2>
+                  <p className="font-mono text-[8px] tracking-[0.18em] mt-1 text-white/45">{active.role}</p>
                 </div>
-              ))}
+                {/* Faction badge */}
+                <div className="shrink-0 px-3 py-1.5 rounded-sm mb-1"
+                  style={{ background: `rgba(${rgb},0.18)`, border: `1px solid ${accent}55` }}>
+                  <p className="font-mono text-[7px] tracking-[0.25em] uppercase" style={{ color: accent }}>{active.faction}</p>
+                </div>
+              </div>
             </div>
 
             {/* Sub-tabs */}
-            <div className="flex gap-0 border-b mb-4" style={{ borderColor: `rgba(${rgb},0.18)` }}>
-              {(['about','relationships','appearance','abilities','events','quotes'] as const).map(t => (
+            <div className="flex border-b px-6 shrink-0" style={{ borderColor: `rgba(${rgb},0.15)` }}>
+              {(['about','abilities','quotes','relationships'] as const).map(t => (
                 <button key={t} onClick={() => setSubTab(t)}
-                  className="relative pb-2.5 pr-5 font-mono text-[7.5px] tracking-[0.22em] uppercase transition-colors"
-                  style={{ color: subTab === t ? accent : 'rgba(255,255,255,0.3)' }}>
+                  className="relative py-3 pr-6 font-mono text-[7.5px] tracking-[0.2em] uppercase transition-colors"
+                  style={{ color: subTab === t ? accent : 'rgba(255,255,255,0.28)' }}>
                   {t.toUpperCase()}
-                  {subTab === t && <span className="absolute bottom-0 left-0 right-3 h-[1.5px]" style={{ background: accent }} />}
+                  {subTab === t && <span className="absolute bottom-0 left-0 right-4 h-[1.5px]" style={{ background: accent }} />}
                 </button>
               ))}
             </div>
 
-            {/* Sub-tab content */}
-            <div className="text-[12.5px] text-white/55 leading-relaxed max-w-xl" style={{ fontFamily: 'Georgia, serif', minHeight: 52 }}>
-              {subTab === 'about'         && (active.tabs?.about       || active.desc || '—')}
-              {subTab === 'relationships' && (active.tabs?.relationships || '—')}
-              {subTab === 'appearance'    && (active.tabs?.appearance    || '—')}
-              {subTab === 'abilities'     && (active.tabs?.abilities     || '—')}
-              {subTab === 'events'        && 'Key events for this character are being compiled into the archive…'}
-              {subTab === 'quotes'        && <em>&ldquo;{active.tabs?.quotes || active.quote || '—'}&rdquo;</em>}
+            {/* Tab content */}
+            <div className="flex-1 px-6 py-5">
+              {subTab === 'about' && (
+                <div className="flex flex-col gap-4">
+                  <p className="text-[12.5px] text-white/58 leading-relaxed" style={{ fontFamily: 'Georgia, serif' }}>
+                    {active.tabs?.about || active.desc || active.description || '—'}
+                  </p>
+                  {/* Quick stats chips */}
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { label: 'FIRST APPEARANCE', val: active.appearance || active.stats?.['First Appearance'] || '—' },
+                      { label: 'PLAYED BY',         val: active.actor || active.stats?.['PlayedBy'] || '—' },
+                      { label: 'RACE',              val: active.race || '—' },
+                      { label: 'FACTION',           val: active.faction || '—' },
+                    ].map(s => (
+                      <div key={s.label} className="px-3 py-2 rounded-sm"
+                        style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid rgba(${rgb},0.18)` }}>
+                        <p className="font-mono text-[6.5px] tracking-[0.25em] uppercase text-white/25 mb-0.5">{s.label}</p>
+                        <p className="font-mono text-[9px] text-white/65">{s.val}</p>
+                      </div>
+                    ))}
+                  </div>
+                  {/* Registry stats */}
+                  {active.stats && Object.keys(active.stats).length > 0 && (
+                    <div>
+                      <GoldLine accent={accent} />
+                      <div className="mt-3 grid grid-cols-2 gap-x-8 gap-y-1.5">
+                        {Object.entries(active.stats).map(([k, v]) => (
+                          <div key={k} className="flex justify-between items-baseline border-b py-1"
+                            style={{ borderColor: 'rgba(180,140,60,0.07)' }}>
+                            <p className="font-mono text-[7.5px] uppercase tracking-wider text-white/25">{k}</p>
+                            <p className="font-mono text-[8.5px] text-white/60 text-right">{v as string}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+              {subTab === 'abilities' && (
+                <p className="text-[12.5px] text-white/55 leading-relaxed" style={{ fontFamily: 'Georgia, serif' }}>
+                  {active.tabs?.abilities || 'Abilities record for this character is being compiled into the archive…'}
+                </p>
+              )}
+              {subTab === 'quotes' && (
+                <div className="flex flex-col gap-4">
+                  <p className="text-[14px] text-white/60 italic leading-relaxed" style={{ fontFamily: 'Georgia, serif' }}>
+                    &ldquo;{active.tabs?.quotes || active.quote || '—'}&rdquo;
+                  </p>
+                  {active.tabs?.appearance && (
+                    <>
+                      <GoldLine accent={accent} />
+                      <p className="text-[11.5px] text-white/45 leading-relaxed" style={{ fontFamily: 'Georgia, serif' }}>
+                        {active.tabs.appearance}
+                      </p>
+                    </>
+                  )}
+                </div>
+              )}
+              {subTab === 'relationships' && (
+                <div>
+                  {active.relationships && active.relationships.length > 0 ? (
+                    <div className="grid grid-cols-2 gap-2">
+                      {active.relationships.map((r: any) => (
+                        <div key={r.name} className="flex items-center gap-2.5 p-2.5 rounded-sm"
+                          style={{ background: 'rgba(255,255,255,0.03)', border: `1px solid rgba(${rgb},0.12)` }}>
+                          <div className="w-7 h-7 rounded-full flex items-center justify-center text-base shrink-0"
+                            style={{ background: `rgba(${rgb},0.2)`, border: `1px solid ${accent}44` }}>
+                            {r.avatar}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-mono text-[8.5px] text-white/72 truncate">{r.name}</p>
+                            <p className="font-mono text-[7px] truncate" style={{ color: accent + '88' }}>{r.role}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="font-mono text-[9px] text-white/20 tracking-wider">
+                      Relationship data for this character is being compiled…
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           </div>
-        </div>
-      )}
 
-      {/* Right detail panel */}
-      {active && (
-        <div className="w-64 shrink-0 border-l border-[#b48c3c]/15 flex flex-col overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
-          {/* Relationships */}
-          {active.relationships && active.relationships.length > 0 && (
-            <div className="p-4 border-b border-[#b48c3c]/12">
-              <SLabel accent={accent}>RELATIONSHIPS</SLabel>
-              <div className="flex flex-col gap-1.5">
+          {/* ── Right sidebar: compact info + relationships ── */}
+          <div className="w-56 shrink-0 border-l flex flex-col overflow-y-auto" style={{ borderColor: `rgba(${rgb},0.15)`, scrollbarWidth: 'none' }}>
+
+            {/* Character portrait thumbnail */}
+            <div className="relative overflow-hidden shrink-0" style={{ height: 160 }}>
+              <img
+                src={active.image || active.img || '/Images/gandalf_portrait.png'}
+                alt={active.name}
+                className="w-full h-full object-cover object-top"
+                style={{ filter: 'brightness(0.65) saturate(1)' }}
+              />
+              <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(10,8,6,0.85) 0%, transparent 55%)' }} />
+              <div className="absolute bottom-2.5 left-3">
+                <p className="font-mono text-[7px] tracking-[0.2em] uppercase" style={{ color: accent + 'cc' }}>{active.race}</p>
+              </div>
+            </div>
+
+            {/* Key stats */}
+            <div className="p-3 border-b flex flex-col gap-1.5" style={{ borderColor: `rgba(${rgb},0.1)` }}>
+              <SLabel accent={accent}>CHARACTER INFO</SLabel>
+              {[
+                { label: 'Status',    val: active.status },
+                { label: 'Race',      val: active.race },
+                { label: 'Faction',   val: active.faction },
+                { label: 'Actor',     val: active.actor || active.stats?.PlayedBy || '—' },
+                { label: 'Debut',     val: active.appearance || active.stats?.['First Appearance'] || '—' },
+              ].map(d => (
+                <div key={d.label} className="flex justify-between items-start gap-2 py-0.5 border-b last:border-0"
+                  style={{ borderColor: 'rgba(180,140,60,0.06)' }}>
+                  <p className="font-mono text-[7px] uppercase tracking-wider text-white/25 shrink-0">{d.label}</p>
+                  <p className="font-mono text-[8px] text-white/58 text-right leading-tight">{d.val}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Relationships list */}
+            {active.relationships && active.relationships.length > 0 && (
+              <div className="p-3 flex flex-col gap-1.5">
+                <SLabel accent={accent}>RELATIONSHIPS</SLabel>
                 {active.relationships.map((r: any) => (
-                  <div key={r.name} className="flex items-center gap-2.5 py-1.5 px-2 rounded-sm cursor-pointer hover:bg-white/[0.03] transition-colors">
-                    <div className="w-6 h-6 rounded-full flex items-center justify-center text-sm shrink-0"
-                      style={{ background: `rgba(${rgb},0.2)`, border: `1px solid rgba(${rgb},0.3)` }}>
+                  <div key={r.name} className="flex items-center gap-2 py-1 px-1.5 rounded-sm transition-colors hover:bg-white/[0.03]">
+                    <div className="w-5 h-5 rounded-full flex items-center justify-center text-xs shrink-0"
+                      style={{ background: `rgba(${rgb},0.18)`, border: `1px solid ${accent}33` }}>
                       {r.avatar}
                     </div>
                     <div className="min-w-0">
-                      <p className="font-mono text-[9px] text-white/70 truncate">{r.name}</p>
-                      <p className="font-mono text-[7px] truncate" style={{ color: accent + '88' }}>{r.role}</p>
+                      <p className="font-mono text-[8px] text-white/62 truncate">{r.name}</p>
+                      <p className="font-mono text-[6.5px] truncate" style={{ color: accent + '77' }}>{r.role}</p>
                     </div>
                   </div>
                 ))}
               </div>
-            </div>
-          )}
-
-          {/* Stats detail */}
-          <div className="p-4 border-b border-[#b48c3c]/12">
-            <SLabel accent={accent}>CHARACTER INFO</SLabel>
-            {Object.entries(active.stats || {}).map(([k, v]) => (
-              <div key={k} className="flex justify-between items-baseline py-1 border-b last:border-0" style={{ borderColor: 'rgba(180,140,60,0.06)' }}>
-                <p className="font-mono text-[7.5px] uppercase tracking-wider text-white/28">{k}</p>
-                <p className="font-mono text-[9px] text-white/60 text-right max-w-[120px]">{v as string}</p>
-              </div>
-            ))}
+            )}
           </div>
-
-          {/* PlayedBy */}
-          {active.stats?.PlayedBy && (
-            <div className="p-4">
-              <SLabel accent={accent}>PLAYED BY</SLabel>
-              <p className="font-mono text-[10px] text-white/60">
-                {active.stats.PlayedBy}<br />
-                <span className="text-[7.5px] text-white/25">FULL NAME</span>
-              </p>
-            </div>
-          )}
         </div>
       )}
     </div>
