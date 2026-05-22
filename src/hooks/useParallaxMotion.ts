@@ -11,14 +11,16 @@ type ParallaxFactors = {
 
 // Module-level scroll cache shared across all parallax instances — one listener, zero getComputedStyle calls
 let _parallaxScrollY = 0;
-if (typeof window !== "undefined") {
-  window.addEventListener("scroll", () => { _parallaxScrollY = window.scrollY; }, { passive: true });
-}
-
-// Single shared mouse state — avoids N separate mousemove listeners for N parallax layers
 let _mouseTargetX = 0;
 let _mouseTargetY = 0;
-if (typeof window !== "undefined") {
+let _parallaxListenersAttached = false;
+
+function attachParallaxListeners() {
+  if (typeof window === "undefined" || _parallaxListenersAttached) return;
+  // Skip on touch devices — no mouse parallax needed, saves battery
+  if ('ontouchstart' in window || navigator.maxTouchPoints > 0) return;
+  _parallaxListenersAttached = true;
+  window.addEventListener("scroll", () => { _parallaxScrollY = window.scrollY; }, { passive: true });
   window.addEventListener("mousemove", (e: MouseEvent) => {
     _mouseTargetX = e.clientX / window.innerWidth - 0.5;
     _mouseTargetY = e.clientY / window.innerHeight - 0.5;
@@ -34,6 +36,7 @@ export function useParallaxMotion(
   enabled = true
 ) {
   useEffect(() => {
+    attachParallaxListeners();
     if (!enabled) return;
     const el = ref.current;
     if (!el) return;

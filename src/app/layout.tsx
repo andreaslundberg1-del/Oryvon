@@ -23,6 +23,19 @@ const pressStart2P = Press_Start_2P({ weight: '400', variable: "--font-arcade", 
 export const metadata: Metadata = {
   title: "ORYVON — The Dimensional Archive",
   description: "An interactive portal through time, civilizations, and the evolution of worlds.",
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+    viewportFit: "cover",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "ORYVON",
+  },
+  themeColor: "#000000",
   icons: {
     icon: [
       { url: "/favicon.svg", type: "image/svg+xml" },

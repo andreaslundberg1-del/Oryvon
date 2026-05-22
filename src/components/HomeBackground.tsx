@@ -7,11 +7,9 @@ import * as THREE from "three";
 import { useParallaxMotion } from "@/hooks/useParallaxMotion";
 import ParticleBackground from "./ParticleBackground";
 
-// Module-level scroll cache — updated by scroll event, read each RAF without getComputedStyle
+// Module-level scroll cache — attached lazily after mount to avoid SSR crash
 let _cachedScrollY = 0;
-if (typeof window !== "undefined") {
-  window.addEventListener("scroll", () => { _cachedScrollY = window.scrollY; }, { passive: true });
-}
+let _bgScrollListenerAttached = false;
 
 function CinematicCamera() {
   useFrame((state) => {
@@ -39,6 +37,7 @@ function AnimatedStars() {
 
 function HomeBackgroundInner({ activeTimeline }: { activeTimeline: string | null }) {
   const [isMounted, setIsMounted] = useState(false);
+  const [isTouch, setIsTouch] = useState(false);
 
   const nebulaRef = useRef<HTMLDivElement>(null);
   const ringsRef = useRef<HTMLDivElement>(null);
@@ -47,6 +46,13 @@ function HomeBackgroundInner({ activeTimeline }: { activeTimeline: string | null
 
   useEffect(() => {
     setIsMounted(true);
+    const touch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    setIsTouch(touch);
+    // Attach scroll listener here so it's browser-only, never SSR
+    if (!_bgScrollListenerAttached && !touch) {
+      _bgScrollListenerAttached = true;
+      window.addEventListener("scroll", () => { _cachedScrollY = window.scrollY; }, { passive: true });
+    }
   }, []);
 
   const active = !!activeTimeline;
@@ -126,7 +132,7 @@ function HomeBackgroundInner({ activeTimeline }: { activeTimeline: string | null
             willChange: "transform",
           }}
         />
-        {typeof window !== "undefined" && !('ontouchstart' in window) && (
+        {isMounted && !isTouch && (
           <div className="absolute inset-0 opacity-80">
             <Canvas
               camera={{ position: [0, 0, 5], fov: 60 }}

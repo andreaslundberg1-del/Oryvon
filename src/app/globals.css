@@ -161,8 +161,10 @@ body {
 /* Stable cinematic layers — GPU composited, no stepped grain flicker */
 .oryvon-gpu-layer {
   transform: translateZ(0);
+  -webkit-transform: translateZ(0);
   backface-visibility: hidden;
-  contain: layout style paint;
+  -webkit-backface-visibility: hidden;
+  /* Removed 'contain: layout style paint' — breaks Safari fixed/sticky and compositing budget */
   isolation: isolate;
 }
 
@@ -239,12 +241,19 @@ body {
   inset: 0;
   z-index: 9990;
   pointer-events: none;
-  opacity: 0.022;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E");
+  /* SVG feTurbulence filter removed — crashes Safari 14 and older iOS WebKit */
+  /* Replaced with a safe CSS-only repeating grain pattern */
+  opacity: 0.018;
+  background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAMAAAAp4XiDAAAAUVBMVEWFhYWDg4N3d3dtbW17e3t1dXWBgYGHh4t5eXlzc3OLi4ubm5uVlZWPj4+NjY19fX2JiYl/f39ra2uRkZGZmZlpaWmXl5dvb29xcXGTk5NnZ2c8TV1mAAAAG3RSTlNAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEAvEOwtAAAFVklEQVR4XpWWB67c2BUFb3g557T/hRo9/WUMZHlgr4Bg8Z4qQgQJlHI4A8SzFVrapvmTF9O7dKoJ4ORbnkut3aObe5do5oBsKLtj5p6dkBzQ6urLwFYECVdE3OGhOJFqjXTKoBlp8Ij1QLZXK0T19/9dkMf0ZVGrEZAGBBJFT//H9eAgANAF6I2EeBoTB7lFJ4HCtCEA==");
   background-repeat: repeat;
-  background-size: 256px 256px;
-  will-change: transform;
+  background-size: 128px 128px;
   transform: translateZ(0);
+}
+
+/* Hide noise on mobile — saves paint cost, not noticeable on small screens */
+@media (max-width: 768px) {
+  .noise-overlay { display: none; }
+  .scanline-overlay { display: none; }
 }
 
 .scanline-overlay {
@@ -296,6 +305,25 @@ body {
   .hero-scroll-parallax,
   .portal-scroll-reveal {
     transform: none !important;
+  }
+}
+
+/* Mobile performance: disable expensive animations and blur on small screens */
+@media (max-width: 768px) {
+  .oryvon-spin-slow,
+  .oryvon-spin-reverse,
+  .oryvon-spin-mid,
+  .oryvon-nebula-drift,
+  .oryvon-mist-drift,
+  .god-ray-stable,
+  .oryvon-compass-float {
+    animation: none !important;
+    will-change: auto !important;
+  }
+  /* Reduce backdrop-filter intensity to prevent iOS GPU crash */
+  * {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
   }
 }
 

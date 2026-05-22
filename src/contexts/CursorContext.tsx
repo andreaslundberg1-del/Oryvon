@@ -78,12 +78,15 @@ const CursorContext = createContext<CursorContextType | undefined>(undefined);
 
 export function CursorProvider({ children }: { children: ReactNode }) {
   const [settings, setSettingsState] = useState<CursorSettings>(DEFAULT_CURSOR_SETTINGS);
-  const [isDesktop, setIsDesktop] = useState(true);
+  // Start false — safe for SSR and mobile. Prevents hydration mismatch on iPhone.
+  const [isDesktop, setIsDesktop] = useState(false);
 
-  // Check if desktop
+  // Check if desktop — runs only in browser after hydration
   useEffect(() => {
     const checkDesktop = () => {
-      const isDesktopDevice = window.innerWidth >= 1024;
+      const isDesktopDevice = window.innerWidth >= 1024 &&
+        !('ontouchstart' in window) &&
+        navigator.maxTouchPoints === 0;
       setIsDesktop(isDesktopDevice);
     };
 

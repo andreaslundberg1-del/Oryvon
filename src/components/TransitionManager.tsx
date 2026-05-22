@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAudio } from '@/components/AudioManager';
@@ -101,6 +101,30 @@ export function TransitionProvider({ children }: { children: React.ReactNode }) 
 }
 
 function TransitionOverlay({ type }: { type: string }) {
+  // Pre-generate random values to avoid Math.random() during render
+  const blackHoleParticles = useMemo(() => Array.from({ length: 20 }, (_, i) => ({
+    id: i,
+    w: Math.random() * 3 + 1,
+    h: Math.random() * 3 + 1,
+    left: Math.random() * 100,
+    top: Math.random() * 100,
+    dur: Math.random() * 1.5 + 0.5,
+  })), []);
+
+  const gamingLines = useMemo(() => Array.from({ length: 50 }, (_, i) => ({
+    id: i,
+    height: Math.random() * 50 + 10,
+    rotate: Math.random() * 360,
+    translateY: Math.random() * 100,
+  })), []);
+
+  const stadiumFlashes = useMemo(() => Array.from({ length: 40 }, (_, i) => ({
+    id: i,
+    left: Math.random() * 100,
+    top: Math.random() * 100,
+    delay: Math.random() * 1.5,
+  })), []);
+
   // === 1. Graphics History (Black Hole Portal) ===
   if (type === 'graphics-history') {
     return (
@@ -111,38 +135,37 @@ function TransitionOverlay({ type }: { type: string }) {
         exit={{ opacity: 0, transition: { duration: 0.5 } }}
         transition={{ duration: 0.85, ease: 'easeInOut' }}
       >
-        {/* Stars/Particles being pulled into the singularity */}
+        {/* Stars/Particles — capped at 20 to prevent iOS memory crash */}
         <motion.div className="absolute inset-0" initial={{ scale: 1.5 }} animate={{ scale: 0 }} transition={{ duration: 2.2, ease: "easeIn" }}>
-          {Array.from({ length: 100 }).map((_, i) => (
+          {blackHoleParticles.map((p) => (
             <motion.div 
-              key={i} 
+              key={p.id} 
               className="absolute bg-white rounded-full"
               style={{
-                width: Math.random() * 3 + 1 + 'px',
-                height: Math.random() * 3 + 1 + 'px',
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                boxShadow: '0 0 8px #fff'
+                width: p.w + 'px',
+                height: p.h + 'px',
+                left: `${p.left}%`,
+                top: `${p.top}%`,
               }}
               animate={{
                 left: '50%',
                 top: '50%',
                 opacity: [1, 1, 0]
               }}
-              transition={{ duration: Math.random() * 1.5 + 0.5, ease: "easeIn" }}
+              transition={{ duration: p.dur, ease: "easeIn" }}
             />
           ))}
         </motion.div>
 
-        {/* Accretion Disk (Swirling glowing matter) */}
+        {/* Accretion Disk — mix-blend-screen removed (crashes iOS GPU compositor) */}
         <motion.div
-          className="absolute rounded-full mix-blend-screen"
+          className="absolute rounded-full"
           style={{
-            background: 'conic-gradient(from 0deg, transparent 0%, rgba(255,150,50,0.8) 20%, transparent 40%, rgba(100,200,255,0.8) 60%, transparent 80%)',
-            filter: 'blur(30px)',
+            background: 'conic-gradient(from 0deg, transparent 0%, rgba(255,150,50,0.6) 20%, transparent 40%, rgba(100,200,255,0.6) 60%, transparent 80%)',
+            filter: 'blur(20px)',
           }}
           initial={{ width: '10vw', height: '10vw', opacity: 0, rotate: 0 }}
-          animate={{ width: '300vw', height: '300vw', opacity: 1, rotate: 720 }}
+          animate={{ width: '300vw', height: '300vw', opacity: 0.85, rotate: 720 }}
           transition={{ duration: 2.5, ease: "easeIn" }}
         />
         
@@ -203,15 +226,15 @@ function TransitionOverlay({ type }: { type: string }) {
           className="absolute inset-0"
           initial={{ scale: 1 }} animate={{ scale: 15 }} transition={{ duration: 2.5, ease: "easeIn" }}
         >
-          {Array.from({ length: 50 }).map((_, i) => (
+          {gamingLines.map((l) => (
             <div 
-              key={i} 
+              key={l.id} 
               className="absolute w-1 bg-white"
               style={{
-                height: `${Math.random() * 50 + 10}%`,
+                height: `${l.height}%`,
                 left: '50%', top: '50%',
                 transformOrigin: 'top center',
-                transform: `rotate(${Math.random() * 360}deg) translateY(${Math.random() * 100}px)`,
+                transform: `rotate(${l.rotate}deg) translateY(${l.translateY}px)`,
                 boxShadow: '0 0 10px #ff00ff, 0 0 20px #00ffff'
               }}
             />
@@ -248,17 +271,17 @@ function TransitionOverlay({ type }: { type: string }) {
         
         {/* Camera Flashes (Crowd) */}
         <motion.div className="absolute inset-0">
-          {Array.from({ length: 40 }).map((_, i) => (
+          {stadiumFlashes.map((f) => (
             <motion.div 
-              key={i} 
+              key={f.id} 
               className="absolute w-3 h-3 bg-white rounded-full shadow-[0_0_15px_#fff]"
               style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
+                left: `${f.left}%`,
+                top: `${f.top}%`,
               }}
               initial={{ opacity: 0, scale: 0 }}
               animate={{ opacity: [0, 1, 0], scale: [0, 1.5, 0] }}
-              transition={{ delay: Math.random() * 1.5, duration: 0.2 }}
+              transition={{ delay: f.delay, duration: 0.2 }}
             />
           ))}
         </motion.div>

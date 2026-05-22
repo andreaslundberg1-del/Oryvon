@@ -22,6 +22,8 @@ export default function ParticleBackground() {
 
   useEffect(() => {
     setIsMounted(true);
+    // Skip mouse parallax on touch devices (no mouse)
+    if ('ontouchstart' in window || navigator.maxTouchPoints > 0) return;
     const handleMouseMove = (e: MouseEvent) => {
       mouseRef.current.targetX = e.clientX / window.innerWidth - 0.5;
       mouseRef.current.targetY = e.clientY / window.innerHeight - 0.5;
@@ -44,9 +46,12 @@ export default function ParticleBackground() {
     let width = (canvas.width = window.innerWidth);
     let height = (canvas.height = window.innerHeight);
 
+    const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    const particleCount = isTouch ? 30 : 100;
+
     const initParticles = () => {
       particles = [];
-      for (let i = 0; i < 100; i++) {
+      for (let i = 0; i < particleCount; i++) {
         particles.push({
           x: Math.random() * width,
           y: Math.random() * height,
