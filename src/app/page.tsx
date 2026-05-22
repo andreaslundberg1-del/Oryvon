@@ -1098,9 +1098,9 @@ function EraPortal({
     <div 
       className="relative cursor-none select-none transition-all duration-[750ms] ease-[cubic-bezier(0.25,1,0.5,1)] group w-full sm:w-auto"
       style={{ 
-        width: "clamp(130px, 12.5vw, 200px)",
-        height: "clamp(260px, 27vw, 430px)",
-        transform: hovered ? "translateY(-14px) scale(1.05)" : "translateY(0) scale(1)",
+        width: "clamp(140px, 13.5vw, 215px)",
+        height: "clamp(280px, 30vw, 470px)",
+        transform: hovered ? "translateY(-18px) scale(1.06)" : "translateY(0) scale(1)",
       }}
       onClick={onClick}
       onMouseEnter={onEnter}
@@ -1108,13 +1108,13 @@ function EraPortal({
     >
       {/* ── ATMOSPHERIC COLOURED BACK-GLOW (Bypasses overflow clipping) ── */}
       <div
-        className="absolute pointer-events-none transition-all duration-700 ease-out z-0 filter blur-[28px] rounded-[180px_180px_24px_24px]"
+        className="absolute pointer-events-none transition-all duration-700 ease-out z-0 filter blur-[40px] rounded-[180px_180px_24px_24px]"
         style={{
-          inset: hovered ? "-45px" : "-20px",
+          inset: hovered ? "-55px" : "-25px",
           background: hovered 
-            ? `radial-gradient(circle, rgba(238, 208, 120, 0.22) 0%, ${g.color}20 40%, transparent 75%)` 
-            : `radial-gradient(circle, rgba(201, 147, 58, 0.08) 0%, transparent 70%)`,
-          opacity: hovered ? 0.85 : 0.40,
+            ? `radial-gradient(circle, rgba(238, 208, 120, 0.35) 0%, ${g.color}30 40%, transparent 75%)` 
+            : `radial-gradient(circle, rgba(201, 147, 58, 0.15) 0%, ${g.color}10 60%, transparent 80%)`,
+          opacity: hovered ? 1.0 : 0.60,
         }}
       />
 
@@ -1123,12 +1123,12 @@ function EraPortal({
         className="relative w-full h-full rounded-[180px_180px_16px_16px] overflow-hidden z-10 flex flex-col justify-between items-center p-4 pb-6 border transition-all duration-700 ease-in-out"
         style={{
           border: hovered 
-            ? "1.5px solid rgba(238, 208, 120, 0.90)" 
-            : "1.2px solid rgba(201, 147, 58, 0.28)",
+            ? "2px solid rgba(238, 208, 120, 0.95)" 
+            : "1.5px solid rgba(201, 147, 58, 0.45)",
           boxShadow: hovered 
-            ? `0 24px 60px rgba(0,0,0,0.98), inset 0 0 45px rgba(0,0,0,1), inset 0 0 22px rgba(238, 208, 120, 0.25)` 
-            : `0 12px 36px rgba(0,0,0,0.92), inset 0 0 35px rgba(0,0,0,0.98), inset 0 0 10px rgba(197, 147, 53, 0.12)`,
-          background: "linear-gradient(180deg, rgba(8, 6, 3, 0.04) 0%, rgba(0, 0, 0, 0.99) 100%)",
+            ? `0 30px 80px rgba(0,0,0,0.99), inset 0 0 60px rgba(0,0,0,0.8), inset 0 0 30px rgba(238, 208, 120, 0.18), 0 0 40px ${g.color}30` 
+            : `0 16px 50px rgba(0,0,0,0.95), inset 0 0 40px rgba(0,0,0,0.9), inset 0 0 15px rgba(197, 147, 53, 0.18)`,
+          background: "linear-gradient(180deg, rgba(15, 10, 4, 0.2) 0%, rgba(0, 0, 0, 0.95) 100%)",
         }}
       >
         {/* Cinematic Background Image (Recessed, mysterious gateway scenery) */}
@@ -1141,8 +1141,8 @@ function EraPortal({
             opacity: 1.0,
             transform: hovered ? "scale(1.16)" : "scale(1.04)",
             filter: hovered 
-              ? "brightness(0.75) contrast(1.15) saturate(0.90)" 
-              : "brightness(0.55) contrast(1.1) saturate(0.80)",
+              ? "brightness(0.85) contrast(1.2) saturate(1.0)" 
+              : "brightness(0.65) contrast(1.15) saturate(0.85)",
           }}
         />
 
@@ -1209,21 +1209,31 @@ function EraPortal({
         <div
           className="absolute inset-x-0 top-0 h-2/3 z-5 pointer-events-none transition-opacity duration-700"
           style={{
-            backgroundImage: `radial-gradient(circle at 50% 0%, rgba(238, 208, 120, 0.22) 0%, transparent 75%)`,
-            opacity: hovered ? 1 : 0.45,
+            backgroundImage: `radial-gradient(ellipse at 50% 0%, rgba(238, 208, 120, 0.35) 0%, rgba(201,147,58,0.12) 50%, transparent 80%)`,
+            opacity: hovered ? 1 : 0.60,
+          }}
+        />
+
+        {/* Arch top golden rim light */}
+        <div
+          className="absolute inset-x-0 top-0 pointer-events-none z-10 transition-opacity duration-700"
+          style={{
+            height: '35%',
+            background: `linear-gradient(180deg, ${g.color}18 0%, transparent 100%)`,
+            opacity: hovered ? 1 : 0.55,
           }}
         />
 
         {/* Elegant Golden Engraved Inner Trim Frame */}
         <div 
-          className="absolute inset-[5px] rounded-[175px_175px_11px_11px] pointer-events-none transition-all duration-700 z-10"
+          className="absolute inset-[6px] rounded-[175px_175px_11px_11px] pointer-events-none transition-all duration-700 z-10"
           style={{
             border: hovered 
-              ? `1.2px solid rgba(238, 208, 120, 0.55)` 
-              : `1px solid rgba(201, 147, 58, 0.15)`,
+              ? `1.5px solid rgba(238, 208, 120, 0.70)` 
+              : `1px solid rgba(201, 147, 58, 0.30)`,
             boxShadow: hovered 
-              ? `0 0 15px rgba(238, 208, 120, 0.25), inset 0 0 10px rgba(238, 208, 120, 0.15)` 
-              : `0 0 8px rgba(201, 147, 58, 0.08), inset 0 0 5px rgba(201, 147, 58, 0.05)`,
+              ? `0 0 20px rgba(238, 208, 120, 0.30), inset 0 0 15px rgba(238, 208, 120, 0.15)` 
+              : `0 0 10px rgba(201, 147, 58, 0.12), inset 0 0 8px rgba(201, 147, 58, 0.08)`,
           }}
         />
 
@@ -1249,7 +1259,7 @@ function EraPortal({
         />
 
         {/* Inner Content (Icon, Label, Count stacked vertically) */}
-        <div className="relative z-20 flex flex-col items-center gap-3 w-full text-center mt-auto pb-1">
+        <div className="relative z-20 flex flex-col items-center gap-3 w-full text-center mt-auto pb-4">
           {/* Realm Icon */}
           <div 
             className="transition-all duration-[750ms] ease-out pb-0.5"
@@ -1268,12 +1278,12 @@ function EraPortal({
             <h3
               style={{
                 fontFamily: "'Cinzel', 'Times New Roman', serif",
-                fontSize: "clamp(11px, 0.82vw, 12.5px)",
-                letterSpacing: "0.24em",
-                color: hovered ? "#ffffff" : "rgba(255,255,255,0.88)",
+                fontSize: "clamp(12px, 1vw, 14px)",
+                letterSpacing: "0.28em",
+                color: hovered ? "#ffffff" : "rgba(255,255,255,0.92)",
                 textShadow: hovered
-                  ? `0 0 10px rgba(238, 208, 120, 0.75), 0 0 18px ${g.color}45`
-                  : `0 0 4px rgba(0,0,0,0.9)`,
+                  ? `0 0 12px rgba(238, 208, 120, 0.90), 0 0 22px ${g.color}60, 0 2px 4px rgba(0,0,0,0.8)`
+                  : `0 0 8px rgba(238,208,120,0.25), 0 2px 6px rgba(0,0,0,0.9)`,
                 transition: "all 0.5s",
                 whiteSpace: "nowrap",
               }}
@@ -1284,9 +1294,11 @@ function EraPortal({
 
             {/* Realm Count */}
             <span 
-              className="font-mono text-[7px] tracking-[0.18em] transition-colors duration-500 font-semibold uppercase"
+              className="font-mono tracking-[0.22em] transition-colors duration-500 font-semibold uppercase"
               style={{
-                color: hovered ? g.color : "rgba(238,208,120,0.45)"
+                fontSize: 'clamp(7px, 0.65vw, 9px)',
+                color: hovered ? g.color : "rgba(238,208,120,0.55)",
+                textShadow: hovered ? `0 0 8px ${g.color}80` : 'none',
               }}
             >
               {g.count.split(' ')[0]} {t('uni.realms')}
@@ -2577,27 +2589,27 @@ export default function Home() {
 
                 {/* Left golden/bronze nebula cloud */}
                 <div 
-                  className="absolute top-[-10%] -left-[15%] w-[75vw] h-[95vh] rounded-full filter blur-[130px] opacity-30 mix-blend-screen"
+                  className="absolute top-[-10%] -left-[15%] w-[80vw] h-[100vh] rounded-full filter blur-[120px] opacity-50 mix-blend-screen"
                   style={{
-                    background: "radial-gradient(circle at center, rgba(168, 118, 42, 0.38) 0%, rgba(80, 50, 10, 0.18) 50%, transparent 80%)",
+                    background: "radial-gradient(circle at center, rgba(168, 118, 42, 0.55) 0%, rgba(80, 50, 10, 0.28) 50%, transparent 80%)",
                     animation: "nebula-drift-left 32s ease-in-out infinite alternate",
                   }}
                 />
                 
                 {/* Right golden/bronze nebula cloud */}
                 <div 
-                  className="absolute top-[10%] -right-[15%] w-[75vw] h-[95vh] rounded-full filter blur-[130px] opacity-28 mix-blend-screen"
+                  className="absolute top-[10%] -right-[15%] w-[80vw] h-[100vh] rounded-full filter blur-[120px] opacity-45 mix-blend-screen"
                   style={{
-                    background: "radial-gradient(circle at center, rgba(238, 208, 120, 0.35) 0%, rgba(138, 88, 12, 0.15) 50%, transparent 80%)",
+                    background: "radial-gradient(circle at center, rgba(238, 208, 120, 0.50) 0%, rgba(138, 88, 12, 0.22) 50%, transparent 80%)",
                     animation: "nebula-drift-right 36s ease-in-out infinite alternate",
                   }}
                 />
 
                 {/* Additional Layered Golden Core Nebula Behind Logo */}
                 <div 
-                  className="absolute top-[-15%] left-1/2 -translate-x-1/2 w-[98vw] h-[72vh] rounded-full filter blur-[110px] opacity-85 mix-blend-screen"
+                  className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[100vw] h-[80vh] rounded-full filter blur-[100px] opacity-90 mix-blend-screen"
                   style={{
-                    background: "radial-gradient(circle, rgba(255, 223, 130, 0.28) 0%, rgba(201, 147, 58, 0.15) 45%, rgba(138, 88, 12, 0.05) 70%, transparent 100%)",
+                    background: "radial-gradient(circle, rgba(255, 223, 130, 0.42) 0%, rgba(201, 147, 58, 0.22) 45%, rgba(138, 88, 12, 0.08) 70%, transparent 100%)",
                   }}
                 />
 
@@ -2652,7 +2664,7 @@ export default function Home() {
                 <div 
                   className="absolute inset-0 z-10 pointer-events-none select-none"
                   style={{
-                    background: "radial-gradient(circle at center, transparent 15%, rgba(0, 0, 0, 0.75) 60%, rgba(0, 0, 0, 1) 100%)",
+                    background: "radial-gradient(ellipse at 50% 40%, transparent 20%, rgba(0, 0, 0, 0.65) 55%, rgba(0, 0, 0, 0.98) 100%)",
                   }}
                 />
 
@@ -2673,21 +2685,21 @@ export default function Home() {
 
               {/* ── 1. Top Cinematic Hero Area ── */}
               <div className="flex flex-col items-center relative z-20 w-full" style={{ paddingTop: 'clamp(0.5rem, 2vw, 2rem)' }}>
-                <div className="font-mono text-amber-500/35 tracking-[0.4em] uppercase hero-sub" style={{ fontSize: 'clamp(6px, 0.8vw, 8px)', marginBottom: 'clamp(0.5rem, 1vw, 1rem)' }}>
+                <div className="font-mono text-amber-500/50 tracking-[0.4em] uppercase hero-sub" style={{ fontSize: 'clamp(6px, 0.8vw, 8px)', marginBottom: 'clamp(0.25rem, 0.75vw, 0.75rem)' }}>
                   [ LAT: 59.3293° N // LNG: 18.0686° E // ALT: 850m ]
                 </div>
 
                 {/* Majestic Center Oryndor Symbol Emblem (Centered above O R Y V O N logo) */}
                 <div 
                   className="relative z-20 pointer-events-auto transition-transform duration-700 hover:scale-[1.04]"
-                  style={{ marginBottom: 'clamp(0.5rem, 1.5vw, 1.5rem)', filter: "drop-shadow(0 0 70px rgba(255, 233, 163, 0.85)) drop-shadow(0 0 35px rgba(201, 147, 58, 0.7)) drop-shadow(0 4px 20px rgba(0,0,0,0.9))" }}
+                  style={{ marginBottom: 'clamp(0.25rem, 1vw, 1rem)', filter: "drop-shadow(0 0 100px rgba(255, 233, 163, 1.0)) drop-shadow(0 0 55px rgba(201, 147, 58, 0.95)) drop-shadow(0 0 25px rgba(238,208,120,0.8)) drop-shadow(0 4px 20px rgba(0,0,0,0.9))" }}
                 >
                   {staticLogoLoaded ? (
                     <img
                       src={staticLogoSymbolUrl}
                       alt="ORYVON Symbol"
                       className="oryvon-logo-float pointer-events-auto object-contain"
-                      style={{ width: 'clamp(140px, 20vw, 300px)', height: 'clamp(140px, 20vw, 300px)' }}
+                      style={{ width: 'clamp(160px, 22vw, 320px)', height: 'clamp(160px, 22vw, 320px)' }}
                       onError={() => setStaticLogoLoaded(false)}
                     />
                   ) : (
@@ -2739,7 +2751,7 @@ export default function Home() {
                 {/* Tagline */}
                 <p
                   className="uppercase text-center font-light block font-mono text-amber-500/60 z-20 hero-sub"
-                  style={{ fontSize: 'clamp(7px, 0.9vw, 10px)', letterSpacing: '0.45em', marginRight: '-0.45em' }}
+                  style={{ fontSize: 'clamp(8px, 1vw, 11px)', letterSpacing: '0.45em', marginRight: '-0.45em' }}
                 >
                   {homepageSettings.slogan || t('home.worldsEvolve')}
                 </p>
@@ -2748,7 +2760,7 @@ export default function Home() {
                 <div className="flex flex-col items-center gap-1 relative z-20 pointer-events-none hero-sub" style={{ marginTop: 'clamp(1rem, 2vw, 2rem)' }}>
                   <span 
                     className="font-mono text-amber-500/40 uppercase"
-                    style={{ fontSize: 'clamp(6px, 0.8vw, 8px)', letterSpacing: '0.45em', textShadow: "0 0 8px rgba(245,158,11,0.2)" }}
+                    style={{ fontSize: 'clamp(6.5px, 0.85vw, 9px)', letterSpacing: '0.45em', textShadow: "0 0 12px rgba(245,158,11,0.4)" }}
                   >
                     {homepageSettings.subtitle || t('home.descendExplore')}
                   </span>
