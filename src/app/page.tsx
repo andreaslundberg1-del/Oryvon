@@ -1446,6 +1446,7 @@ export default function Home() {
   const [selectedGenre, setSelectedGenre] = useState<Genre>(null);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
+  const [mobileCarouselIndex, setMobileCarouselIndex] = useState(0);
   const mainRef = useRef<HTMLDivElement>(null);
 
   // ── Live Supabase Data ─────────────────────────────────────
@@ -2791,24 +2792,90 @@ export default function Home() {
               </div>
 
               {/* ── 3. Portal Cards Row ── */}
-              <div className="flex flex-col sm:flex-row justify-center items-center w-full max-w-[1600px] relative z-20 px-2 sm:px-0" style={{ gap: 'clamp(0.75rem, 1.5vw, 1.5rem)', paddingBottom: 'clamp(1rem, 2vw, 2rem)' }}>
+
+              {/* DESKTOP: full horizontal row */}
+              <div className="hidden sm:flex justify-center items-end w-full max-w-[1600px] relative z-20 px-2" style={{ gap: 'clamp(0.75rem, 1.5vw, 1.5rem)', paddingBottom: 'clamp(1rem, 2vw, 2rem)' }}>
                 {liveGenres.map((g) => (
                   <EraPortal
                     key={g.id}
                     g={g}
                     hovered={hoveredItem === g.id}
                     onClick={() => handleGenreClick(g.id)}
-                    onEnter={() => {
-                      setHoveredItem(g.id);
-                      playHover();
-                      setAmbientTone(0.85);
-                    }}
-                    onLeave={() => {
-                      setHoveredItem(null);
-                      setAmbientTone(0.0);
-                    }}
+                    onEnter={() => { setHoveredItem(g.id); playHover(); setAmbientTone(0.85); }}
+                    onLeave={() => { setHoveredItem(null); setAmbientTone(0.0); }}
                   />
                 ))}
+              </div>
+
+              {/* MOBILE: horizontal swipe carousel with snap */}
+              <div className="flex sm:hidden flex-col items-center w-full relative z-20" style={{ paddingBottom: 'clamp(1rem, 2vw, 2rem)' }}>
+                <div
+                  id="portal-carousel"
+                  className="w-full overflow-x-auto flex"
+                  style={{
+                    scrollSnapType: 'x mandatory',
+                    WebkitOverflowScrolling: 'touch',
+                    scrollbarWidth: 'none',
+                    msOverflowStyle: 'none',
+                    gap: '0',
+                  }}
+                  onScroll={(e) => {
+                    const el = e.currentTarget;
+                    const cardWidth = el.scrollWidth / liveGenres.length;
+                    const idx = Math.round(el.scrollLeft / cardWidth);
+                    setMobileCarouselIndex(idx);
+                  }}
+                >
+                  {liveGenres.map((g, i) => (
+                    <div
+                      key={g.id}
+                      style={{
+                        scrollSnapAlign: 'center',
+                        flex: '0 0 100%',
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'flex-end',
+                        padding: '0 1rem',
+                      }}
+                    >
+                      <EraPortal
+                        g={g}
+                        hovered={hoveredItem === g.id}
+                        onClick={() => handleGenreClick(g.id)}
+                        onEnter={() => { setHoveredItem(g.id); playHover(); setAmbientTone(0.85); }}
+                        onLeave={() => { setHoveredItem(null); setAmbientTone(0.0); }}
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                {/* Pagination dots */}
+                <div className="flex items-center justify-center gap-2 mt-3">
+                  {liveGenres.map((g, i) => (
+                    <button
+                      key={g.id}
+                      onClick={() => {
+                        const el = document.getElementById('portal-carousel');
+                        if (el) {
+                          const cardWidth = el.scrollWidth / liveGenres.length;
+                          el.scrollTo({ left: cardWidth * i, behavior: 'smooth' });
+                        }
+                        setMobileCarouselIndex(i);
+                      }}
+                      style={{
+                        width: mobileCarouselIndex === i ? 20 : 6,
+                        height: 6,
+                        borderRadius: 3,
+                        background: mobileCarouselIndex === i ? '#c9933a' : 'rgba(201,147,58,0.3)',
+                        border: 'none',
+                        padding: 0,
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease',
+                        boxShadow: mobileCarouselIndex === i ? '0 0 8px rgba(201,147,58,0.6)' : 'none',
+                      }}
+                    />
+                  ))}
+                </div>
               </div>
 
             </div>
@@ -2822,6 +2889,9 @@ export default function Home() {
           .home-page-active .noise-overlay,
           .home-page-active .scanline-overlay {
             display: none !important;
+          }
+          #portal-carousel::-webkit-scrollbar {
+            display: none;
           }
           @keyframes card-metallic-sweep {
             0% {
