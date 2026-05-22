@@ -1,3 +1,4 @@
+// ─── COMPLETE REWRITE — Gaussian-ridge terrain, no walls, proper Tolkien geo ──
 'use client';
 
 import React, { useRef, useMemo, useEffect } from 'react';
@@ -5,7 +6,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Stars } from '@react-three/drei';
 import * as THREE from 'three';
 
-// ─── Seeded pseudo-random (deterministic, no Math.random in render) ───────────
+// ─── Seeded pseudo-random (deterministic) ────────────────────────────────────
 function seededRandom(seed: number) {
   let s = seed;
   return () => {
@@ -14,22 +15,19 @@ function seededRandom(seed: number) {
   };
 }
 
-// ─── Smoothstep / interpolation helpers ───────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 function smoothstep(t: number) { return t * t * (3 - 2 * t); }
 function lerp(a: number, b: number, t: number) { return a + (b - a) * t; }
+function clamp(v: number, lo = 0, hi = 1) { return Math.max(lo, Math.min(hi, v)); }
 
-// ─── Simple value-noise (deterministic) ───────────────────────────────────────
+// ─── Value noise ──────────────────────────────────────────────────────────────
 function valueNoise(x: number, y: number, seed: number): number {
   const rng = seededRandom(seed);
   const table: number[] = [];
   for (let i = 0; i < 256; i++) table.push(rng());
-  const hash = (xi: number, yi: number) => {
-    const idx = ((xi & 255) + (yi & 255) * 57) & 255;
-    return table[idx];
-  };
+  const hash = (xi: number, yi: number) => table[((xi & 255) + (yi & 255) * 57) & 255];
   const xi = Math.floor(x), yi = Math.floor(y);
-  const xf = x - xi, yf = y - yi;
-  const tx = smoothstep(xf), ty = smoothstep(yf);
+  const tx = smoothstep(x - xi), ty = smoothstep(y - yi);
   return lerp(
     lerp(hash(xi, yi), hash(xi + 1, yi), tx),
     lerp(hash(xi, yi + 1), hash(xi + 1, yi + 1), tx),
@@ -37,11 +35,11 @@ function valueNoise(x: number, y: number, seed: number): number {
   );
 }
 
-// ─── Fractal brownian motion ───────────────────────────────────────────────────
+// ─── fBm (fractal brownian motion) ────────────────────────────────────────────
 function fbm(x: number, y: number, octaves: number, seed: number): number {
   let v = 0, amp = 0.5, freq = 1, max = 0;
   for (let i = 0; i < octaves; i++) {
-    v += amp * valueNoise(x * freq, y * freq, seed + i * 1337);
+    v   += amp * valueNoise(x * freq, y * freq, seed + i * 1337);
     max += amp;
     amp *= 0.5;
     freq *= 2.1;
@@ -49,15 +47,20 @@ function fbm(x: number, y: number, octaves: number, seed: number): number {
   return v / max;
 }
 
-// ─── Signed-distance ridge helper ─────────────────────────────────────────────
-// Returns height contribution for a ridge defined by a polyline of control points.
-// Each segment contributes a ridge falloff; the max across segments is returned.
-function polylineRidge(
+// ─── Domain-warped fBm — gives organic, eroded look ──────────────────────────
+function warpedFbm(x: number, y: number, octaves: number, seed: number, warp = 0.4): number {
+  const wx = fbm(x + 0.3, y + 0.1, 3, seed + 5000) * warp;
+  const wy = fbm(x + 1.7, y + 2.3, 3, seed + 6000) * warp;
+  return fbm(x + wx, y + wy, octaves, seed);
+}
+
+// ─── Gaussian ridge — smooth bell curve, NO hard walls ───────────────────────
+// width = sigma in normalised coords; falloff is e^(-d²/2σ²)
+function gaussRidge(
   nx: number, ny: number,
   pts: [number, number][],
-  width: number,     // half-width in normalised coords
-  height: number,    // peak height contribution
-  taper = 0.0,       // 0=uniform, >0 narrows toward end
+  sigma: number,
+  height: number,
 ): number {
   let best = 0;
   for (let i = 0; i < pts.length - 1; i++) {
@@ -65,335 +68,363 @@ function polylineRidge(
     const [bx, by] = pts[i + 1];
     const dx = bx - ax, dy = by - ay;
     const len2 = dx * dx + dy * dy;
-    const t = Math.max(0, Math.min(1, ((nx - ax) * dx + (ny - ay) * dy) / len2));
+    const t = clamp(((nx - ax) * dx + (ny - ay) * dy) / (len2 || 1));
     const px = ax + t * dx, py = ay + t * dy;
-    const dist = Math.sqrt((nx - px) * (nx - px) + (ny - py) * (ny - py));
-    const segW = width * (1 - taper * t);
-    const v = Math.max(0, 1 - dist / segW);
-    best = Math.max(best, v * v * height);
+    const d2 = (nx - px) * (nx - px) + (ny - py) * (ny - py);
+    const g = Math.exp(-d2 / (2 * sigma * sigma)) * height;
+    if (g > best) best = g;
   }
   return best;
 }
 
-// ─── Point-ridge helper (isolated peak) ───────────────────────────────────────
-function pointRidge(nx: number, ny: number, px: number, py: number, radius: number, h: number): number {
-  const d = Math.sqrt((nx - px) * (nx - px) + (ny - py) * (ny - py));
-  return Math.max(0, 1 - d / radius) * h;
+// ─── Gaussian point peak ──────────────────────────────────────────────────────
+function gaussPeak(nx: number, ny: number, px: number, py: number, sigma: number, h: number): number {
+  const d2 = (nx - px) * (nx - px) + (ny - py) * (ny - py);
+  return Math.exp(-d2 / (2 * sigma * sigma)) * h;
 }
 
-// ─── Middle-earth heightmap — geographically accurate ─────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+// MIDDLE-EARTH HEIGHTMAP
+// ═══════════════════════════════════════════════════════════════════════════════
 //
-// Coordinate system (matches MAP_LOCATIONS x/y percentages):
-//   nx = x/100  (0=west, 1=east)
-//   ny = y/100  (0=north, 1=south)
+// COORDINATE SYSTEM — matches MAP_LOCATIONS x/y percentages divided by 100:
+//   nx = 0 (west/Belegaer) → 1 (east/Rhûn)
+//   ny = 0 (north)         → 1 (south/Harad)
 //
-// Key landmarks calibrated to MAP_LOCATIONS:
-//   Shire       (0.17, 0.52)  — NW lowlands
-//   Bree        (0.22, 0.46)  — Weatherhills foothills
-//   Rivendell   (0.31, 0.40)  — notch in Misty Mtns west side
-//   Misty Mtns  spine ~nx=0.37 from ny=0.18 to ny=0.70
-//   Lothlórien  (0.40, 0.51)  — east of MM, river confluence, low wooded
-//   Rohan       (0.33, 0.62)  — wide plains south of MM
-//   Minas Tirith(0.45, 0.65)  — foot of White Mtns, Gondor
-//   Mirkwood    (0.55, 0.33)  — long N-S dark forest east of MM
-//   Mordor      (0.63, 0.60)  — SE, volcanic plateau ringed by mountains
-//   Mount Doom  (0.67, 0.63)  — inside Mordor
-//   Barad-dûr   (0.63, 0.57)  — NW inside Mordor ring
+// SOURCE: lotrproject.com canonical map, cross-referenced with Tolkien atlas.
+// VERIFIED positions (from map):
+//   The Shire      (0.17, 0.52)  — NW, rolling hills
+//   Bree           (0.22, 0.46)  — crossroads town, Weather Hills east
+//   Rivendell      (0.31, 0.40)  — hidden valley, west foot of Misty Mtns
+//   Misty Mountains spine nx≈0.37, ny 0.17→0.70 (N-S chain)
+//   Fangorn Forest (0.37, 0.60)  — south end of Misty Mtns
+//   Lothlórien     (0.40, 0.51)  — east of MM at Moria latitude
+//   Rohan (Edoras) (0.33, 0.62)  — south of Fangorn, west of Anduin,
+//                                   north of White Mountains
+//   White Mountains arc: nx 0.25→0.56, ny ≈0.66
+//   Minas Tirith   (0.45, 0.65)  — north foot of White Mtns
+//   Mirkwood       (0.55, 0.33)  — long N-S dark forest east of MM
+//   Mordor basin   nx 0.59→0.75, ny 0.54→0.72
+//   Ephel Dúath    west wall of Mordor, N-S at nx≈0.58
+//   Ered Lithui    north wall of Mordor, E-W at ny≈0.54
+//   Mount Doom     (0.67, 0.63)
+//   Barad-dûr      (0.63, 0.57)
+//   Blue Mountains nx≈0.12–0.15, ny 0.22→0.42 (western coastal chain)
+//   Grey Mountains nx 0.43→0.68, ny≈0.16
+//   Bay of Belfalas: southern sea inlet ny≈0.82, nx 0.28→0.42
+//   Gulf of Lhûn:  western sea inlet ny≈0.28–0.34
+//
+// DESIGN PRINCIPLES:
+//   1. gaussRidge() — Gaussian (bell-curve) falloff, NO hard walls
+//   2. Ridges are low amplitude (max 0.42); base terrain carries the weight
+//   3. warpedFbm() adds organic erosion on top of structural ridges
+//   4. Final vertical scale is 1.15 (was 2.4) — realistic slope angles
+//   5. Plains are subtracted to stay flat (Rohan, Shire, Anduin vale)
+// ═══════════════════════════════════════════════════════════════════════════════
 
 function middleEarthHeight(nx: number, ny: number): number {
 
-  // ── 1. Continent / ocean mask ──────────────────────────────────────────────
-  // The landmass occupies roughly nx 0.10–0.82, ny 0.08–0.88
-  // Western coast curves in at north and south; eastern edge is rougher.
-  // We approximate with a rounded polygon via SDF.
-  const coastNoise = fbm(nx * 4.5, ny * 4.5, 3, 7) * 0.045;
-  const coastX = nx + coastNoise;
-  const coastY = ny + coastNoise * 0.6;
+  // ── 1. CONTINENT MASK ─────────────────────────────────────────────────────
+  // Gaussian-edged landmass so coasts are never hard walls.
+  // Slight noise offsets to make coastline organic.
+  const cNoise = fbm(nx * 5, ny * 5, 2, 13) * 0.03;
+  const cx = nx + cNoise, cy = ny + cNoise * 0.7;
 
-  // West coast: roughly at nx=0.10–0.13, curving in
-  const westEdge = 0.10 + Math.sin(coastY * Math.PI) * 0.03;
-  // East edge: rougher, at nx~0.80
-  const eastEdge = 0.80 + coastNoise * 0.5;
-  // North edge: ny~0.08
-  const northEdge = 0.07 + coastNoise * 0.3;
-  // South edge: ny~0.88
-  const southEdge = 0.89 + coastNoise * 0.3;
+  // West coast  ~nx=0.11 (bows inward slightly north/south)
+  const westEdge  = 0.11 + Math.sin(cy * Math.PI) * 0.025 + cNoise * 0.4;
+  // East edge   ~nx=0.81
+  const eastEdge  = 0.81 + cNoise * 0.6;
+  // North/south edges
+  const northEdge = 0.08 + cNoise * 0.4;
+  const southEdge = 0.88 + cNoise * 0.3;
 
-  const onLand = coastX > westEdge && coastX < eastEdge
-    && coastY > northEdge && coastY < southEdge;
-  if (!onLand) return 0.0;
+  if (cx < westEdge || cx > eastEdge || cy < northEdge || cy > southEdge) return 0.0;
 
-  // Distance-from-coast falloff so shores are low
-  const distW = Math.max(0, coastX - westEdge);
-  const distE = Math.max(0, eastEdge - coastX);
-  const distN = Math.max(0, coastY - northEdge);
-  const distS = Math.max(0, southEdge - coastY);
-  const coastDist = Math.min(distW, distE, distN, distS);
-  const coastFalloff = Math.min(1, coastDist / 0.08);
+  // Smooth shore falloff — no cliff edge at waterline
+  const dW = clamp((cx - westEdge)  / 0.06);
+  const dE = clamp((eastEdge  - cx) / 0.07);
+  const dN = clamp((cy - northEdge) / 0.06);
+  const dS = clamp((southEdge  - cy) / 0.07);
+  const shore = smoothstep(Math.min(dW, dE, dN, dS));
 
-  // Gulf of Lhûn — indent from west coast around ny=0.26–0.34
-  const gulfY = ny - 0.30, gulfX = nx - 0.14;
-  const gulfDepth = Math.max(0, 0.07 - Math.abs(gulfY) * 1.8) * Math.max(0, 0.06 - gulfX);
-  const gulfMask = 1 - Math.min(1, gulfDepth * 20);
+  // Gulf of Lhûn — sea inlet west coast, ny≈0.26–0.35
+  // Cuts eastward from the coast around the Blue Mountains gap
+  const glY = ny - 0.305, glX = nx - 0.135;
+  const gulfCut = clamp(1 - (Math.abs(glY) / 0.048 + Math.max(0, glX) / 0.055));
+  const gulfMask = 1 - smoothstep(gulfCut);
 
-  // Bay of Belfalas — southern indent around nx=0.30–0.45, ny~0.82
-  const bayX = nx - 0.37, bayY = ny - 0.83;
-  const bayDepth = Math.max(0, 0.06 - Math.sqrt(bayX * bayX * 2 + bayY * bayY * 3)) * 12;
-  const bayMask = 1 - Math.min(1, bayDepth);
+  // Bay of Belfalas — southern sea indentation
+  const bbX = nx - 0.35, bbY = ny - 0.825;
+  const bayCut = clamp(1 - Math.sqrt(bbX * bbX / (0.07 * 0.07) + bbY * bbY / (0.04 * 0.04)));
+  const bayMask = 1 - smoothstep(bayCut);
 
-  const landBase = coastFalloff * gulfMask * bayMask;
+  const landMask = shore * gulfMask * bayMask;
 
-  // ── 2. Large-scale macro terrain (gentle rolling) ─────────────────────────
-  const macro = fbm(nx * 3.2, ny * 3.2, 5, 11) * 0.28 + 0.12;
+  // ── 2. BASE ELEVATION — domain-warped macro terrain ───────────────────────
+  // Low-frequency warped noise gives rolling hills everywhere.
+  // Amplitude kept low so ridges don't get buried or over-amplified.
+  const base = warpedFbm(nx * 2.8, ny * 2.8, 5, 11, 0.35) * 0.22 + 0.13;
 
-  // ── 3. MISTY MOUNTAINS — long N-S spine, nx≈0.36–0.40, ny=0.16 to 0.72 ──
-  // Slightly curved — bows east in the middle (around Moria/Lothlórien)
+  // ── 3. MISTY MOUNTAINS ────────────────────────────────────────────────────
+  // N-S spine, nx≈0.37, ny 0.17→0.70.
+  // Bows very slightly east at Moria latitude (ny≈0.48).
+  // Rivendell pass: gentle saddle at ny≈0.39 (sigma=0.025 dip).
   const mmPts: [number, number][] = [
-    [0.375, 0.17], [0.373, 0.23], [0.368, 0.30],
-    [0.370, 0.37], // near Rivendell — a notch/pass
-    [0.375, 0.43], [0.382, 0.50], [0.385, 0.57],
-    [0.382, 0.63], [0.375, 0.70],
+    [0.370, 0.17], [0.372, 0.22], [0.370, 0.28],
+    [0.368, 0.34], [0.370, 0.40],
+    [0.376, 0.46], [0.380, 0.52], [0.381, 0.58],
+    [0.379, 0.63], [0.374, 0.69],
   ];
-  // Add Rivendell pass notch: lower the ridge slightly at the pass latitude
-  const rivendellPassFactor = 1 - Math.max(0, 1 - Math.abs(ny - 0.38) / 0.04) * 0.55;
-  const mmRidge = polylineRidge(nx, ny, mmPts, 0.038, 0.78) * rivendellPassFactor;
+  const mmRaw = gaussRidge(nx, ny, mmPts, 0.028, 0.42);
+  // Carve a gentle Rivendell pass (saddle) — subtract a Gaussian dip
+  const passDepth = gaussPeak(nx, ny, 0.369, 0.390, 0.012, 0.14);
+  const mmRidge = Math.max(0, mmRaw - passDepth);
 
-  // ── 4. WHITE MOUNTAINS — E-W arc, southern Gondor, ny≈0.66–0.69 ──────────
-  // Curve from nx=0.27 (west coast foothills) arcing slightly north to nx=0.58
+  // ── 4. WHITE MOUNTAINS (Ered Nimrais) ─────────────────────────────────────
+  // E-W arc from west coast foothills to junction with Ephel Dúath.
+  // Arc bows NORTH slightly at centre — Minas Tirith (0.45,0.65) sits at
+  // the northern foot; Rohan (0.33,0.62) is NORTH of this chain.
   const wmPts: [number, number][] = [
-    [0.27, 0.68], [0.32, 0.67], [0.38, 0.665],
-    [0.44, 0.663], [0.50, 0.665], [0.56, 0.67],
+    [0.255, 0.685], [0.30, 0.675], [0.36, 0.668],
+    [0.42, 0.664], [0.48, 0.665], [0.535, 0.668],
+    [0.565, 0.673],
   ];
-  const wmRidge = polylineRidge(nx, ny, wmPts, 0.030, 0.62);
+  const wmRidge = gaussRidge(nx, ny, wmPts, 0.022, 0.38);
 
-  // ── 5. GREY MOUNTAINS — E-W, far north, ny≈0.15–0.18, nx=0.44 to 0.70 ──
+  // ── 5. BLUE MOUNTAINS (Ered Luin) ─────────────────────────────────────────
+  // Western coastal chain, nx≈0.12–0.15, ny 0.22→0.42.
+  // Straddles the Gulf of Lhûn (gap at ny≈0.305).
+  const bmNPts: [number, number][] = [[0.145, 0.22], [0.140, 0.28], [0.134, 0.300]]; // north spur
+  const bmSPts: [number, number][] = [[0.134, 0.312], [0.138, 0.35], [0.143, 0.42]]; // south spur
+  const bmRidge = gaussRidge(nx, ny, bmNPts, 0.018, 0.28)
+                + gaussRidge(nx, ny, bmSPts, 0.018, 0.28);
+
+  // ── 6. GREY MOUNTAINS (Ered Mithrin) ──────────────────────────────────────
+  // E-W chain far north, ny≈0.15–0.17, nx 0.42→0.68.
   const gmPts: [number, number][] = [
-    [0.44, 0.17], [0.52, 0.155], [0.60, 0.15], [0.68, 0.16],
+    [0.42, 0.165], [0.50, 0.155], [0.58, 0.150], [0.66, 0.158],
   ];
-  const gmRidge = polylineRidge(nx, ny, gmPts, 0.028, 0.55);
+  const gmRidge = gaussRidge(nx, ny, gmPts, 0.020, 0.32);
 
-  // ── 6. ERED MITHRIN / Iron Hills fringe — NE of Mirkwood ─────────────────
+  // ── 7. IRON HILLS — NE fringe, east of Mirkwood ───────────────────────────
   const ironPts: [number, number][] = [
-    [0.64, 0.20], [0.70, 0.22], [0.75, 0.25],
+    [0.63, 0.21], [0.68, 0.23], [0.73, 0.26],
   ];
-  const ironRidge = polylineRidge(nx, ny, ironPts, 0.025, 0.42);
+  const ironRidge = gaussRidge(nx, ny, ironPts, 0.016, 0.22);
 
-  // ── 7. MORDOR RING — three mountain chains surrounding Mordor ─────────────
-  // Ephel Dúath (west wall): N-S, nx≈0.57, ny=0.50–0.72
-  const ephelPts: [number, number][] = [
-    [0.575, 0.50], [0.578, 0.55], [0.580, 0.60],
-    [0.578, 0.65], [0.574, 0.70],
-  ];
-  const ephelRidge = polylineRidge(nx, ny, ephelPts, 0.026, 0.68);
-
-  // Ered Lithui (north wall): E-W, ny≈0.52, nx=0.58–0.76
-  const eredPts: [number, number][] = [
-    [0.585, 0.520], [0.62, 0.515], [0.66, 0.512],
-    [0.70, 0.516], [0.74, 0.522],
-  ];
-  const eredRidge = polylineRidge(nx, ny, eredPts, 0.022, 0.60);
-
-  // ── 8. MORDOR INTERIOR — ash plateau ──────────────────────────────────────
-  const mordorInside =
-    nx > 0.585 && nx < 0.75 &&
-    ny > 0.525 && ny < 0.73 &&
-    nx > 0.585 + (ny - 0.525) * 0.15; // diagonal SE corner cutoff
-  const mordorPlateau = mordorInside ? 0.22 + fbm(nx * 8, ny * 8, 3, 99) * 0.06 : 0;
-
-  // ── 9. MOUNT DOOM — spike inside Mordor ───────────────────────────────────
-  const mountDoom = pointRidge(nx, ny, 0.670, 0.630, 0.022, 1.05);
-
-  // ── 10. RHÛN / Eastern highlands — gentle rise toward east ───────────────
-  const eastRise = Math.max(0, nx - 0.72) * 0.8 * smoothstep(Math.min(1, Math.max(0, (ny - 0.15) / 0.6)));
-
-  // ── 11. WEATHER HILLS — small range east of Bree/Shire ───────────────────
+  // ── 8. WEATHER HILLS — small N-S chain east of Bree ──────────────────────
   const whPts: [number, number][] = [
-    [0.24, 0.38], [0.27, 0.41], [0.28, 0.44],
+    [0.255, 0.37], [0.265, 0.41], [0.268, 0.45],
   ];
-  const weatherRidge = polylineRidge(nx, ny, whPts, 0.018, 0.30);
+  const weatherRidge = gaussRidge(nx, ny, whPts, 0.014, 0.16);
 
-  // ── 12. EMYN MUIL — rocky hills above Rohan/Lothlórien ───────────────────
+  // ── 9. EMYN MUIL — rocky knolls above Anduin bend ────────────────────────
   const emynPts: [number, number][] = [
-    [0.42, 0.56], [0.44, 0.57], [0.46, 0.575],
+    [0.435, 0.565], [0.450, 0.572],
   ];
-  const emynRidge = polylineRidge(nx, ny, emynPts, 0.020, 0.28);
+  const emynRidge = gaussRidge(nx, ny, emynPts, 0.016, 0.15);
 
-  // ── 13. MINAS TIRITH / Mount Mindolluin ───────────────────────────────────
-  const mindollin = pointRidge(nx, ny, 0.453, 0.648, 0.018, 0.38);
+  // ── 10. MORDOR RING MOUNTAINS ─────────────────────────────────────────────
+  // Ephel Dúath — western wall, N-S, nx≈0.578, ny 0.52→0.70
+  const ephelPts: [number, number][] = [
+    [0.578, 0.520], [0.578, 0.560], [0.578, 0.600],
+    [0.576, 0.640], [0.572, 0.680], [0.568, 0.715],
+  ];
+  const ephelRidge = gaussRidge(nx, ny, ephelPts, 0.020, 0.38);
 
-  // ── 14. DEPRESSION ZONES — valleys, plains ────────────────────────────────
-  // The Shire: gentle rolling lowlands
-  const shireDip = Math.max(0, 0.10 - Math.sqrt(
-    (nx - 0.17) * (nx - 0.17) * 2.5 + (ny - 0.52) * (ny - 0.52) * 2.0
-  ) * 1.6);
+  // Ered Lithui — northern wall, E-W, ny≈0.535, nx 0.580→0.750
+  const eredPts: [number, number][] = [
+    [0.580, 0.535], [0.620, 0.528], [0.660, 0.524],
+    [0.700, 0.528], [0.740, 0.537],
+  ];
+  const eredRidge = gaussRidge(nx, ny, eredPts, 0.018, 0.35);
 
-  // Rohan plains — very flat
-  const rohanDip = Math.max(0, 0.12 - Math.sqrt(
-    (nx - 0.33) * (nx - 0.33) * 1.6 + (ny - 0.62) * (ny - 0.62) * 2.2
-  ) * 1.4);
+  // ── 11. MORDOR INTERIOR — low volcanic ash plateau ────────────────────────
+  // Inside the ring, slightly elevated above sea level but BELOW the walls.
+  // Uses warped noise so it doesn't look flat.
+  const inMordorBasin =
+    nx > 0.585 && nx < 0.745 && ny > 0.540 && ny < 0.715;
+  const mordorPlateau = inMordorBasin
+    ? 0.18 + warpedFbm(nx * 9, ny * 9, 3, 99, 0.2) * 0.05
+    : 0.0;
 
-  // Anduin vale — narrow low corridor between MM and Mordor ring
-  const anduinX = nx - 0.455, anduinY = ny - 0.58;
-  const anduinVale = Math.max(0, 0.08 - Math.abs(anduinX) * 5) * Math.max(0, 1 - Math.abs(anduinY) * 3);
+  // ── 12. MOUNT DOOM ────────────────────────────────────────────────────────
+  // Gaussian peak, sigma=0.016 → very localised, realistic volcanic cone.
+  const mountDoom = gaussPeak(nx, ny, 0.670, 0.630, 0.016, 0.58);
 
-  // Lothlórien — the golden wood, flat wooded
-  const lórienDip = Math.max(0, 0.06 - Math.sqrt(
-    (nx - 0.40) * (nx - 0.40) * 3 + (ny - 0.51) * (ny - 0.51) * 3
-  ) * 2.0);
+  // ── 13. MINAS TIRITH / MOUNT MINDOLLUIN ───────────────────────────────────
+  const mindolluin = gaussPeak(nx, ny, 0.452, 0.648, 0.013, 0.20);
 
-  // ── 15. FINE DETAIL ───────────────────────────────────────────────────────
-  const detail = fbm(nx * 14, ny * 14, 3, 42) * 0.055;
-  const medDetail = fbm(nx * 7, ny * 7, 2, 77) * 0.04;
+  // ── 14. RHÛN EASTERN RISE — gentle highlands far east ────────────────────
+  const eastRise = clamp((nx - 0.74) / 0.12) * 0.15
+    * smoothstep(clamp((ny - 0.18) / 0.5));
 
-  // ── Composite ─────────────────────────────────────────────────────────────
-  const ridges = mmRidge + wmRidge + gmRidge + gmRidge * 0.3
-    + ironRidge + ephelRidge + eredRidge
-    + weatherRidge + emynRidge + mindollin;
+  // ── 15. PLAINS / VALLEY SUPPRESSORS ──────────────────────────────────────
+  // These subtract from the composite to keep flatlands flat.
+  // Uses smooth Gaussian wells — no hard edges.
 
-  const raw = landBase * (macro + ridges * 0.15 + mordorPlateau * 0.5)
-    + ridges
-    + mordorPlateau
-    + mountDoom
-    + eastRise * landBase
-    - shireDip - rohanDip - anduinVale - lórienDip
-    + detail + medDetail;
+  // The Shire — rolling but LOW
+  const shireDip = gaussPeak(nx, ny, 0.165, 0.520, 0.062, 0.10);
 
-  return Math.max(0, Math.min(1, raw));
+  // Rohan — wide flat plains between White Mtns (south) and Fangorn/MM (north)
+  // Bounded: nx 0.25–0.46, ny 0.57–0.66
+  const rohanDip = gaussPeak(nx, ny, 0.340, 0.618, 0.075, 0.13)
+                 * clamp((nx - 0.25) / 0.04)
+                 * clamp((0.47 - nx) / 0.04)
+                 * clamp((ny - 0.565) / 0.03)
+                 * clamp((0.665 - ny) / 0.03);
+
+  // Anduin Vale — river corridor between MM and Ephel Dúath
+  const anduinDip = gaussPeak(nx, ny, 0.455, 0.575, 0.022, 0.09)
+                  + gaussPeak(nx, ny, 0.470, 0.620, 0.018, 0.07);
+
+  // Lothlórien — flat golden wood east of MM at Moria latitude
+  const lorienDip = gaussPeak(nx, ny, 0.400, 0.510, 0.030, 0.07);
+
+  // ── 16. FINE EROSION DETAIL ───────────────────────────────────────────────
+  // High-freq warped noise for micro-terrain detail (cliffs, gullies)
+  const detail = warpedFbm(nx * 11, ny * 11, 3, 42, 0.25) * 0.045;
+
+  // ── COMPOSITE ─────────────────────────────────────────────────────────────
+  const structuralRidges =
+    mmRidge + wmRidge + bmRidge + gmRidge + ironRidge
+    + weatherRidge + emynRidge + ephelRidge + eredRidge
+    + mordorPlateau + mountDoom + mindolluin;
+
+  const raw = landMask * (base + eastRise + detail)
+    + structuralRidges
+    - shireDip - rohanDip - anduinDip - lorienDip;
+
+  return clamp(raw);
 }
 
-// ─── Biome helpers ────────────────────────────────────────────────────────────
-function inEllipse(nx: number, ny: number, cx: number, cy: number, rx: number, ry: number): boolean {
-  const dx = (nx - cx) / rx, dy = (ny - cy) / ry;
-  return dx * dx + dy * dy < 1;
+// ─── Biome zone tests ─────────────────────────────────────────────────────────
+function inBox(nx: number, ny: number, x0: number, x1: number, y0: number, y1: number) {
+  return nx > x0 && nx < x1 && ny > y0 && ny < y1;
+}
+function inGauss(nx: number, ny: number, cx: number, cy: number, rx: number, ry: number) {
+  return ((nx - cx) / rx) ** 2 + ((ny - cy) / ry) ** 2 < 1;
 }
 
-// ─── Terrain colour function — geographically accurate biomes ────────────────
+// ─── Terrain colour ───────────────────────────────────────────────────────────
 function terrainColor(nx: number, ny: number, h: number): THREE.Color {
   const col = new THREE.Color();
 
-  // ── Ocean & shore ──
-  if (h <= 0.0) {
-    col.setRGB(0.02, 0.07, 0.16);
+  // ── OCEAN ──
+  if (h <= 0.0) { col.setRGB(0.02, 0.07, 0.17); return col; }
+
+  // ── SHALLOW WATER / SHORE GRADIENT ──
+  if (h < 0.06) {
+    const t = h / 0.06;
+    col.setRGB(lerp(0.03, 0.24, t), lerp(0.10, 0.21, t), lerp(0.23, 0.15, t));
     return col;
   }
-  if (h < 0.055) {
-    const t = h / 0.055;
-    col.setRGB(lerp(0.03, 0.22, t), lerp(0.10, 0.20, t), lerp(0.22, 0.14, t));
-    return col;
-  }
-  if (h < 0.10) {
-    const t = (h - 0.055) / 0.045;
-    col.setRGB(lerp(0.32, 0.29, t), lerp(0.27, 0.25, t), lerp(0.16, 0.14, t));
+  if (h < 0.11) {
+    const t = (h - 0.06) / 0.05;
+    col.setRGB(lerp(0.30, 0.28, t), lerp(0.26, 0.24, t), lerp(0.15, 0.14, t));
     return col;
   }
 
-  // ── Biome detection (geographic zones, not height-only) ──
-  // Mordor interior — SE volcanic plateau
-  const inMordor = nx > 0.590 && nx < 0.750 && ny > 0.530 && ny < 0.730
-    && nx > 0.590 + (ny - 0.530) * 0.12;
-
+  // ── BIOME CLASSIFICATION ──
+  // Mordor basin (inside the ring walls)
+  const inMordor = inBox(nx, ny, 0.586, 0.744, 0.542, 0.712);
   // Near Mount Doom
-  const nearDoom = Math.sqrt((nx - 0.670) * (nx - 0.670) + (ny - 0.630) * (ny - 0.630)) < 0.045;
-
-  // Ephel Dúath / Mordor mountain ring (dark volcanic rock)
-  const nearMordorMtn = Math.sqrt((nx - 0.580) * (nx - 0.580) * 1.5 + (ny - 0.61) * (ny - 0.61)) < 0.15
+  const nearDoom = inGauss(nx, ny, 0.670, 0.630, 0.040, 0.040);
+  // Dark Mordor mountain rock (ring walls themselves)
+  const mordorMtn = (gaussRidge(nx, ny,
+    [[0.578, 0.520],[0.578, 0.600],[0.572, 0.680]], 0.022, 1) > 0.18
+    || gaussRidge(nx, ny,
+    [[0.580, 0.535],[0.660, 0.524],[0.740, 0.537]], 0.020, 1) > 0.18)
     && !inMordor;
 
-  // The Shire — lush green rolling hills
-  const inShire = inEllipse(nx, ny, 0.165, 0.520, 0.080, 0.070);
+  // The Shire
+  const inShire = inGauss(nx, ny, 0.165, 0.520, 0.082, 0.068);
+  // Eriador / Arnor
+  const inEriador = nx < 0.37 && ny > 0.18 && ny < 0.61 && !inShire;
+  // Rohan — SOUTH of MM/Fangorn, NORTH of White Mtns
+  const inRohan = inBox(nx, ny, 0.25, 0.47, 0.570, 0.662) && !inMordor;
+  // Fangorn — dense old-growth forest south end of MM
+  const inFangorn = inGauss(nx, ny, 0.372, 0.600, 0.030, 0.028);
+  // Gondor — south of White Mountains
+  const inGondor = inBox(nx, ny, 0.26, 0.575, 0.672, 0.835) && !inMordor;
+  // Lothlórien
+  const inLorien = inGauss(nx, ny, 0.400, 0.510, 0.040, 0.032);
+  // Mirkwood — long N-S forest east of MM
+  const inMirkwood = inBox(nx, ny, 0.440, 0.625, 0.190, 0.540)
+    && nx > 0.39 && !inMordor && !inLorien;
+  // Rhûn eastern steppe
+  const inRhun = nx > 0.73 && ny > 0.17 && ny < 0.62;
+  // Harad southern desert/savanna
+  const inHarad = ny > 0.78 && !inGondor && !inMordor;
 
-  // Arnor / Eriador — temperate north-west
-  const inEriador = nx < 0.38 && ny > 0.20 && ny < 0.62 && !inShire;
-
-  // Rohan — wide open amber plains
-  const inRohan = nx > 0.24 && nx < 0.48 && ny > 0.595 && ny < 0.695
-    && !inMordor
-    // keep south of White Mountains
-    && !(nx > 0.27 && nx < 0.56 && ny > 0.655 && ny < 0.695);
-
-  // Gondor — grey-green foothills south of White Mtns
-  const inGondor = nx > 0.27 && nx < 0.58 && ny > 0.68 && ny < 0.84 && !inMordor;
-
-  // Lothlórien — flat golden wooded vale
-  const inLórien = inEllipse(nx, ny, 0.400, 0.510, 0.045, 0.038);
-
-  // Mirkwood — long dark forest
-  const inMirkwood = nx > 0.47 && nx < 0.63 && ny > 0.18 && ny < 0.53
-    && !inMordor
-    // avoid the mountains
-    && !(nx < 0.39);
-
-  // Rhûn / far east steppe
-  const inRhun = nx > 0.73 && ny > 0.18 && ny < 0.62;
-
-  // Harad — hot southern desert
-  const inHarad = ny > 0.78 && !inGondor;
-
-  // ── Snow / high rock (height-based, overrides biome) ──
-  if (h > 0.75) {
-    const t = Math.min(1, (h - 0.75) / 0.10);
+  // ── HEIGHT-BASED OVERRIDES (snow caps, bare rock) ──
+  if (h > 0.72) {
+    const t = clamp((h - 0.72) / 0.12);
     if (inMordor || nearDoom) {
-      col.setRGB(lerp(0.40, 0.10, t), lerp(0.08, 0.03, t), lerp(0.02, 0.01, t));
+      col.setRGB(lerp(0.38, 0.08, t), lerp(0.07, 0.02, t), lerp(0.02, 0.01, t));
     } else {
-      col.setRGB(lerp(0.75, 0.96, t), lerp(0.73, 0.95, t), lerp(0.65, 0.94, t));
+      col.setRGB(lerp(0.78, 0.96, t), lerp(0.76, 0.95, t), lerp(0.68, 0.94, t));
     }
     return col;
   }
-  if (h > 0.54) {
-    const t = (h - 0.54) / 0.21;
-    if (inMordor || nearDoom || nearMordorMtn) {
-      col.setRGB(lerp(0.20, 0.10, t), lerp(0.06, 0.03, t), lerp(0.03, 0.01, t));
+  if (h > 0.50) {
+    const t = clamp((h - 0.50) / 0.22);
+    if (mordorMtn || inMordor || nearDoom) {
+      col.setRGB(lerp(0.18, 0.10, t), lerp(0.05, 0.02, t), lerp(0.02, 0.01, t));
     } else {
       col.setRGB(lerp(0.44, 0.60, t), lerp(0.40, 0.55, t), lerp(0.32, 0.46, t));
     }
     return col;
   }
 
-  // ── Mid-elevation biome colours ──
-  const t = Math.max(0, Math.min(1, (h - 0.10) / 0.44));
+  // ── MID-ELEVATION BIOME COLOURS ──
+  const t = clamp((h - 0.11) / 0.39);
 
   if (nearDoom) {
-    col.setRGB(lerp(0.42, 0.26, t), lerp(0.10, 0.06, t), lerp(0.02, 0.01, t));
+    col.setRGB(lerp(0.40, 0.22, t), lerp(0.09, 0.04, t), lerp(0.02, 0.01, t));
     return col;
   }
   if (inMordor) {
-    col.setRGB(lerp(0.16, 0.10, t), lerp(0.06, 0.04, t), lerp(0.03, 0.01, t));
+    col.setRGB(lerp(0.15, 0.09, t), lerp(0.05, 0.03, t), lerp(0.03, 0.01, t));
     return col;
   }
   if (inShire) {
-    col.setRGB(lerp(0.18, 0.30, t), lerp(0.44, 0.54, t), lerp(0.10, 0.16, t));
+    col.setRGB(lerp(0.18, 0.30, t), lerp(0.46, 0.56, t), lerp(0.10, 0.16, t));
     return col;
   }
-  if (inLórien) {
-    col.setRGB(lerp(0.30, 0.42, t), lerp(0.48, 0.56, t), lerp(0.12, 0.18, t));
+  if (inFangorn) {
+    col.setRGB(lerp(0.07, 0.13, t), lerp(0.18, 0.26, t), lerp(0.06, 0.10, t));
+    return col;
+  }
+  if (inLorien) {
+    col.setRGB(lerp(0.28, 0.40, t), lerp(0.50, 0.58, t), lerp(0.12, 0.18, t));
     return col;
   }
   if (inMirkwood) {
-    col.setRGB(lerp(0.06, 0.11, t), lerp(0.13, 0.20, t), lerp(0.05, 0.08, t));
+    col.setRGB(lerp(0.06, 0.10, t), lerp(0.14, 0.21, t), lerp(0.05, 0.08, t));
     return col;
   }
   if (inRohan) {
-    col.setRGB(lerp(0.50, 0.60, t), lerp(0.46, 0.52, t), lerp(0.18, 0.24, t));
+    col.setRGB(lerp(0.48, 0.58, t), lerp(0.45, 0.52, t), lerp(0.17, 0.23, t));
     return col;
   }
   if (inGondor) {
-    col.setRGB(lerp(0.28, 0.40, t), lerp(0.32, 0.44, t), lerp(0.20, 0.30, t));
+    col.setRGB(lerp(0.28, 0.40, t), lerp(0.33, 0.44, t), lerp(0.20, 0.30, t));
     return col;
   }
   if (inHarad) {
-    col.setRGB(lerp(0.60, 0.70, t), lerp(0.48, 0.55, t), lerp(0.22, 0.28, t));
+    col.setRGB(lerp(0.58, 0.70, t), lerp(0.46, 0.52, t), lerp(0.20, 0.26, t));
     return col;
   }
   if (inRhun) {
-    col.setRGB(lerp(0.50, 0.58, t), lerp(0.44, 0.50, t), lerp(0.24, 0.30, t));
+    col.setRGB(lerp(0.48, 0.56, t), lerp(0.42, 0.48, t), lerp(0.22, 0.28, t));
     return col;
   }
   if (inEriador) {
-    col.setRGB(lerp(0.24, 0.36, t), lerp(0.38, 0.48, t), lerp(0.14, 0.20, t));
+    col.setRGB(lerp(0.23, 0.34, t), lerp(0.37, 0.47, t), lerp(0.14, 0.20, t));
     return col;
   }
-  // Default temperate
-  col.setRGB(lerp(0.22, 0.36, t), lerp(0.35, 0.46, t), lerp(0.14, 0.22, t));
+  col.setRGB(lerp(0.22, 0.35, t), lerp(0.35, 0.46, t), lerp(0.14, 0.21, t));
   return col;
 }
 
@@ -417,7 +448,8 @@ function TerrainMesh() {
       const nx = (x + 5) / 10;
       const ny = (z + 3.25) / 6.5;
       const h = middleEarthHeight(nx, ny);
-      const elev = h < 0.05 ? 0 : h * 2.4;
+      // Scale: 1.15 gives realistic mountain slopes without walls
+      const elev = h < 0.055 ? 0 : h * 1.15;
       pos.setY(i, elev);
       const c = terrainColor(nx, ny, h);
       colorArr[i * 3]     = c.r;
@@ -452,8 +484,8 @@ function TerrainMesh() {
         />
       </mesh>
 
-      {/* Mount Doom emissive cone overlay — position matches nx=0.670,ny=0.630 */}
-      <mesh position={[1.70, 2.40, 0.595]} castShadow>
+      {/* Mount Doom emissive cone overlay — nx=0.670,ny=0.630, elev≈h*1.15 */}
+      <mesh position={[1.70, 0.82, 0.595]} castShadow>
         <coneGeometry args={[0.22, 0.55, 24]} />
         <meshStandardMaterial
           ref={lavaMatRef}
@@ -465,7 +497,7 @@ function TerrainMesh() {
       </mesh>
 
       {/* Crater glow */}
-      <pointLight position={[1.70, 2.85, 0.595]} color="#ff6600" intensity={3.5} distance={1.8} decay={2} />
+      <pointLight position={[1.70, 1.20, 0.595]} color="#ff6600" intensity={3.5} distance={1.8} decay={2} />
     </group>
   );
 }
@@ -479,7 +511,7 @@ function MapPin({ nx, ny, active, accent, onClick }: {
   const x = nx * 10 - 5;
   const z = ny * 6.5 - 3.25;
   const h = middleEarthHeight(nx, ny);
-  const y = (h < 0.05 ? 0 : h * 2.4) + 0.08;
+  const y = (h < 0.055 ? 0 : h * 1.15) + 0.06;
 
   const pinRef = useRef<THREE.Mesh>(null);
   useFrame(({ clock }) => {
@@ -540,7 +572,7 @@ function AtmosphereFog() {
 function CameraRig() {
   const { camera } = useThree();
   useEffect(() => {
-    camera.position.set(0, 6.5, 4.8);
+    camera.position.set(0, 5.0, 4.2);
     camera.lookAt(0, 0, 0);
   }, [camera]);
   return null;
@@ -596,7 +628,7 @@ export default function MiddleEarthTerrain({
       {/* Fill light from east — cooler */}
       <directionalLight position={[5, 4, 2]} color="#90a8d0" intensity={0.4} />
       {/* Mordor underlight — very subtle orange bleed, centered on Mordor nx≈0.655,ny≈0.620 */}
-      <pointLight position={[1.55, 0.5, 0.53]} color="#ff5500" intensity={1.2} distance={3.0} decay={2} />
+      <pointLight position={[1.55, 0.3, 0.53]} color="#ff5500" intensity={1.2} distance={3.0} decay={2} />
 
       {/* ── Stars (visible at map edges) ── */}
       <Stars radius={30} depth={8} count={800} factor={2} saturation={0.4} fade />
