@@ -1,1022 +1,684 @@
-"use client";
+﻿"use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import OryndorLogo from '@/components/OryndorLogo';
-import ParticleBackground from '@/components/ParticleBackground';
-import { useTransitionPortal } from '@/components/TransitionManager';
 import { useAudio } from '@/components/AudioManager';
-import { useI18n } from '@/components/I18nProvider';
-import InteractiveMap from '@/components/InteractiveMap';
-import CinematicFamilyTree from '@/components/CinematicFamilyTree';
-import Sidebar from '@/components/Sidebar';
 import { getUniverseData } from '@/data/universeRegistry';
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 function hexToRgb(hex: string): string {
-  const cleanHex = hex.replace('#', '');
-  let r = 0, g = 0, b = 0;
-  if (cleanHex.length === 3) {
-    r = parseInt(cleanHex[0] + cleanHex[0], 16);
-    g = parseInt(cleanHex[1] + cleanHex[1], 16);
-    b = parseInt(cleanHex[2] + cleanHex[2], 16);
-  } else if (cleanHex.length === 6) {
-    r = parseInt(cleanHex.substring(0, 2), 16);
-    g = parseInt(cleanHex.substring(2, 4), 16);
-    b = parseInt(cleanHex.substring(4, 6), 16);
-  }
-  return `${r}, ${g}, ${b}`;
+  const c = hex.replace('#', '');
+  const full = c.length === 3 ? c.split('').map(x => x + x).join('') : c;
+  const n = parseInt(full, 16);
+  return `${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}`;
 }
 
+// ─── Drag-scroll horizontal row ───────────────────────────────────────────────
+function ScrollRow({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const drag = useRef(false);
+  const startX = useRef(0);
+  const sl = useRef(0);
+  return (
+    <div
+      ref={ref}
+      className={`flex gap-4 overflow-x-auto pb-2 ${className}`}
+      style={{ scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch',
+               msOverflowStyle: 'none', scrollbarWidth: 'none' }}
+      onMouseDown={e => { drag.current = true; startX.current = e.pageX - (ref.current?.offsetLeft ?? 0); sl.current = ref.current?.scrollLeft ?? 0; }}
+      onMouseMove={e => { if (!drag.current || !ref.current) return; e.preventDefault(); ref.current.scrollLeft = sl.current - (e.pageX - (ref.current.offsetLeft) - startX.current); }}
+      onMouseUp={() => { drag.current = false; }}
+      onMouseLeave={() => { drag.current = false; }}
+    >
+      {children}
+    </div>
+  );
+}
+
+// ─── Section header ───────────────────────────────────────────────────────────
+function RowHeader({ title, sub, accent, onMore }: { title: string; sub?: string; accent: string; onMore?: () => void }) {
+  return (
+    <div className="flex items-center justify-between px-6 md:px-16 mb-5">
+      <div>
+        {sub && <p className="font-mono text-[9px] tracking-[0.32em] uppercase mb-1.5" style={{ color: accent + '99' }}>{sub}</p>}
+        <h2 className="text-xl md:text-2xl font-normal tracking-[0.16em] uppercase text-white" style={{ fontFamily: "'Cinzel', serif" }}>{title}</h2>
+      </div>
+      {onMore && (
+        <button onClick={onMore} className="font-mono text-[9px] tracking-[0.22em] uppercase text-white/40 hover:text-white/80 transition-colors">
+          See All ›
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ─── Character card ───────────────────────────────────────────────────────────
+function CharCard({ char, accent, onClick }: { char: any; accent: string; onClick: () => void }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <div
+      onClick={onClick}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      className="shrink-0 rounded-xl overflow-hidden relative cursor-pointer"
+      style={{
+        width: 'clamp(140px,18vw,180px)',
+        aspectRatio: '2/3',
+        scrollSnapAlign: 'start',
+        transform: hov ? 'scale(1.05) translateY(-4px)' : 'scale(1)',
+        boxShadow: hov ? `0 20px 50px rgba(0,0,0,0.9),0 0 30px ${accent}33` : '0 6px 24px rgba(0,0,0,0.7)',
+        transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+      }}
+    >
+      <img src={char.image || '/Images/gandalf_portrait.png'} alt={char.name}
+        className="absolute inset-0 w-full h-full object-cover"
+        style={{ filter: 'brightness(0.75) saturate(0.9)' }} />
+      <div className="absolute inset-0" style={{ background: `linear-gradient(to top, rgba(2,1,2,0.97) 0%, rgba(2,1,2,0.45) 55%, transparent 100%)` }} />
+      {hov && <div className="absolute inset-0 rounded-xl border-2" style={{ borderColor: accent + '88' }} />}
+      <div className="absolute bottom-0 left-0 right-0 p-3">
+        <p className="text-[11px] font-semibold text-white leading-none truncate" style={{ fontFamily: "'Cinzel', serif" }}>{char.name}</p>
+        <p className="font-mono text-[8px] mt-1 truncate" style={{ color: accent + 'cc' }}>{char.role?.split(',')[0]}</p>
+      </div>
+    </div>
+  );
+}
+
+// ─── Faction card ─────────────────────────────────────────────────────────────
+function FactionCard({ fac, accent }: { fac: any; accent: string }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <div
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      className="shrink-0 rounded-xl overflow-hidden relative"
+      style={{
+        width: 'clamp(200px,24vw,260px)',
+        height: 160,
+        scrollSnapAlign: 'start',
+        transform: hov ? 'scale(1.03)' : 'scale(1)',
+        boxShadow: hov ? `0 16px 48px rgba(0,0,0,0.85), 0 0 20px ${accent}22` : '0 4px 20px rgba(0,0,0,0.6)',
+        transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+      }}
+    >
+      <img src={fac.image || '/Images/middle_earth_map.png'} alt={fac.name}
+        className="absolute inset-0 w-full h-full object-cover"
+        style={{ filter: 'brightness(0.55) saturate(0.8)' }} />
+      <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${accent}22 0%, rgba(0,0,0,0.7) 100%)` }} />
+      <div className="absolute inset-0 p-4 flex flex-col justify-between">
+        <div className="text-2xl">{fac.emblem || '🛡️'}</div>
+        <div>
+          <p className="text-[13px] font-semibold text-white" style={{ fontFamily: "'Cinzel', serif" }}>{fac.name}</p>
+          <p className="font-mono text-[8px] mt-1" style={{ color: accent + 'cc' }}>{fac.alignment || 'Faction'}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Location/gallery card ────────────────────────────────────────────────────
+function LocCard({ loc }: { loc: any }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <div
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      className="shrink-0 rounded-xl overflow-hidden relative"
+      style={{
+        width: 'clamp(220px,28vw,300px)',
+        height: 180,
+        scrollSnapAlign: 'start',
+        transform: hov ? 'scale(1.03)' : 'scale(1)',
+        transition: 'transform 0.3s ease',
+      }}
+    >
+      <img src={loc.image} alt={loc.name}
+        className="absolute inset-0 w-full h-full object-cover"
+        style={{ filter: hov ? 'brightness(0.75)' : 'brightness(0.6)', transition: 'filter 0.3s ease' }} />
+      <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(2,1,2,0.92) 0%, transparent 60%)' }} />
+      <div className="absolute bottom-0 left-0 right-0 p-4">
+        <p className="text-[13px] font-semibold text-white" style={{ fontFamily: "'Cinzel', serif" }}>{loc.name}</p>
+        <p className="text-[10px] text-white/55 mt-0.5 line-clamp-1">{loc.desc}</p>
+      </div>
+    </div>
+  );
+}
+
+// ─── Timeline event card ──────────────────────────────────────────────────────
+function TimelineCard({ ev, idx, accent, active, onClick }: { ev: any; idx: number; accent: string; active: boolean; onClick: () => void }) {
+  return (
+    <div
+      onClick={onClick}
+      className="shrink-0 rounded-xl overflow-hidden relative cursor-pointer"
+      style={{
+        width: 'clamp(220px,26vw,280px)',
+        height: 200,
+        scrollSnapAlign: 'start',
+        border: active ? `2px solid ${accent}` : '2px solid rgba(255,255,255,0.06)',
+        boxShadow: active ? `0 0 30px ${accent}44` : '0 4px 20px rgba(0,0,0,0.6)',
+        transition: 'border-color 0.3s, box-shadow 0.3s',
+      }}
+    >
+      <img src={ev.image || '/Images/fellowship_mountain.png'} alt={ev.title}
+        className="absolute inset-0 w-full h-full object-cover"
+        style={{ filter: 'brightness(0.5) saturate(0.8)' }} />
+      <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(2,1,2,0.95) 0%, transparent 60%)' }} />
+      <div className="absolute bottom-0 left-0 right-0 p-4">
+        <p className="font-mono text-[8px] mb-1.5" style={{ color: accent }}>{ev.date}</p>
+        <p className="text-[13px] font-semibold text-white leading-snug" style={{ fontFamily: "'Cinzel', serif" }}>{ev.title}</p>
+      </div>
+      <div className="absolute top-3 left-3 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-black" style={{ background: accent }}>{idx + 1}</div>
+    </div>
+  );
+}
+
+// ─── Main page ────────────────────────────────────────────────────────────────
 export default function UniverseOverviewPage() {
   const { id } = useParams() as { id: string };
   const router = useRouter();
-  const { playClick, playHover, playEraTransition } = useAudio();
-  const { t } = useI18n();
+  const { playClick, playHover } = useAudio();
 
   const data = getUniverseData(id);
+  const accent = data.accentColor || '#eed078';
+  const rgb = hexToRgb(accent);
 
-  // Core Active Tab State
-  const [activeTab, setActiveTab] = useState<'overview' | 'timeline' | 'map' | 'characters' | 'familyTree' | 'factions' | 'lore' | 'events' | 'media'>('overview');
+  const [navScrolled, setNavScrolled] = useState(false);
+  const [activeChar, setActiveChar] = useState<any>(data.characters?.[0] ?? null);
+  const [charTab, setCharTab] = useState<'about' | 'abilities' | 'quotes'>('about');
+  const [activeTLIdx, setActiveTLIdx] = useState(0);
+  const [navOpen, setNavOpen] = useState(false);
 
-  // Master-Detail States
-  const [activeCharacterId, setActiveCharacterId] = useState('');
-  const [charSearch, setCharSearch] = useState('');
-  const [activeCharTab, setActiveCharTab] = useState<'about' | 'relationships' | 'appearance' | 'abilities' | 'quotes'>('about');
+  const pageRef = useRef<HTMLDivElement>(null);
+  const heroRef = useRef<HTMLDivElement>(null);
+  const charsRef = useRef<HTMLDivElement>(null);
+  const factionsRef = useRef<HTMLDivElement>(null);
+  const tlRef = useRef<HTMLDivElement>(null);
+  const loreRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<HTMLDivElement>(null);
+  const galleryRef = useRef<HTMLDivElement>(null);
 
-  const [activeTimelineIndex, setActiveTimelineIndex] = useState(0);
-  const [activeFactionIndex, setActiveFactionIndex] = useState(0);
-  const [activeLoreIndex, setActiveLoreIndex] = useState(0);
-  const [activeEventIndex, setActiveEventIndex] = useState(0);
-
-  // Set default active character on data load
+  // Floating nav scroll detection
   useEffect(() => {
-    if (data.characters && data.characters.length > 0) {
-      setActiveCharacterId(data.characters[0].id);
-    }
-  }, [data]);
+    const el = pageRef.current;
+    if (!el) return;
+    const onScroll = () => setNavScrolled(el.scrollTop > 80);
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => el.removeEventListener('scroll', onScroll);
+  }, []);
 
-  // Tab configurations — labels resolved via i18n
-  const TABS = [
-    { id: 'overview', labelKey: 'tab.overview' },
-    { id: 'timeline', labelKey: 'tab.timeline' },
-    { id: 'map', labelKey: 'tab.map' },
-    { id: 'characters', labelKey: 'tab.characters' },
-    { id: 'familyTree', labelKey: 'tab.familyTree' },
-    { id: 'factions', labelKey: 'tab.factions' },
-    { id: 'lore', labelKey: 'tab.lore' },
-    { id: 'events', labelKey: 'tab.events' },
-    { id: 'media', labelKey: 'tab.media' }
-  ] as const;
+  const scrollTo = (ref: React.RefObject<HTMLDivElement | null>) => {
+    ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setNavOpen(false);
+    playClick();
+  };
 
-  // Selected Active Character Data
-  const activeChar = data.characters.find((c: any) => c.id === activeCharacterId) || data.characters[0];
+  type NavKey = 'hero'|'characters'|'factions'|'timeline'|'lore'|'map'|'gallery';
+  const NAV_LABELS: { key: NavKey; label: string }[] = [
+    { key: 'hero', label: 'Hero' },
+    { key: 'characters', label: 'Characters' },
+    { key: 'factions', label: 'Factions' },
+    { key: 'timeline', label: 'Timeline' },
+    { key: 'lore', label: 'Lore' },
+    { key: 'map', label: 'Map' },
+    { key: 'gallery', label: 'Gallery' },
+  ];
+  const sectionRefs: Record<NavKey, React.RefObject<HTMLDivElement | null>> = {
+    hero: heroRef, characters: charsRef, factions: factionsRef,
+    timeline: tlRef, lore: loreRef, map: mapRef, gallery: galleryRef,
+  };
 
-  // Selected Active Faction Data
-  const activeFaction = data.factions[activeFactionIndex] || data.factions[0];
-
-  // Selected Active Lore Data
-  const activeLore = data.lore[activeLoreIndex] || data.lore[0];
-
-  // Selected Active Event Data
-  const activeEvent = data.events[activeEventIndex] || data.events[0];
-
-  // Filtered Characters based on search input
-  const filteredCharacters = data.characters.filter((c: any) => 
-    c.name.toLowerCase().includes(charSearch.toLowerCase()) || 
-    c.role.toLowerCase().includes(charSearch.toLowerCase())
-  );
-
-  const accentHex = data.accentColor || '#eed078';
-  const rgbString = hexToRgb(accentHex);
+  const activeEvent = data.events?.[activeTLIdx];
 
   return (
-    <main className="w-full min-h-screen flex relative overflow-hidden bg-[#020102] text-white select-none">
-      {/* Scoped Dynamic Stylesheet */}
+    <div
+      ref={pageRef}
+      className="w-full min-h-screen overflow-y-auto overflow-x-hidden bg-[#020102] text-white"
+      style={{ fontFamily: 'sans-serif' }}
+    >
+      {/* ── SCOPED ACCENT CSS ── */}
       <style dangerouslySetInnerHTML={{ __html: `
-        :root {
-          --uni-accent: ${accentHex};
-          --uni-accent-rgb: ${rgbString};
-        }
-        .uni-text { color: var(--uni-accent) !important; }
-        .uni-text-dim { color: rgba(var(--uni-accent-rgb), 0.55) !important; }
-        .uni-text-hover:hover { color: var(--uni-accent) !important; }
-        .uni-border { border-color: rgba(var(--uni-accent-rgb), 0.2) !important; }
-        .uni-border-focus:focus { border-color: var(--uni-accent) !important; }
-        .uni-border-hover:hover { border-color: rgba(var(--uni-accent-rgb), 0.45) !important; }
-        .uni-border-hover-solid:hover { border-color: var(--uni-accent) !important; }
-        .uni-border-active-full { border-color: var(--uni-accent) !important; }
-        .uni-border-b { border-bottom-color: var(--uni-accent) !important; }
-        .uni-bg { background-color: rgba(var(--uni-accent-rgb), 0.08) !important; }
-        .uni-bg-solid { background-color: var(--uni-accent) !important; }
-        .uni-bg-indicator { background-color: var(--uni-accent) !important; }
-        .uni-bg-hover:hover { background-color: rgba(var(--uni-accent-rgb), 0.15) !important; }
-        .uni-shadow { box-shadow: 0 0 12px var(--uni-accent) !important; }
-        .uni-shadow-sm { box-shadow: 0 0 12px rgba(var(--uni-accent-rgb), 0.08) !important; }
-        .uni-gradient-line { background: linear-gradient(to right, transparent, rgba(var(--uni-accent-rgb), 0.3), transparent) !important; }
-        .uni-border-l { border-left-color: var(--uni-accent) !important; }
-        .uni-timeline-track { background: linear-gradient(to right, rgba(var(--uni-accent-rgb), 0.1), rgba(var(--uni-accent-rgb), 0.3), transparent) !important; }
-        .uni-border-dashed-1 { border-color: rgba(var(--uni-accent-rgb), 0.15) !important; }
-        .uni-border-dashed-2 { border-color: rgba(var(--uni-accent-rgb), 0.08) !important; }
-        .uni-gradient-bg { background-image: linear-gradient(to top right, rgba(var(--uni-accent-rgb), 0.15), transparent) !important; }
-        .group:hover .uni-border-hover-solid { border-color: var(--uni-accent) !important; }
-        .group\\/avatar:hover .uni-avatar-border { border-color: var(--uni-accent) !important; }
-        .group\\/avatar:hover .uni-avatar-text { color: var(--uni-accent) !important; }
-        .group\\/reel:hover .uni-reel-text { color: var(--uni-accent) !important; }
-        .group\\/snd:hover .uni-snd-text { color: var(--uni-accent) !important; }
+        :root { --ua: ${accent}; --ua-rgb: ${rgb}; }
+        .ua { color: var(--ua) !important; }
+        .ua-border { border-color: rgba(var(--ua-rgb), 0.35) !important; }
+        .ua-bg { background: rgba(var(--ua-rgb), 0.1) !important; }
+        .ua-solid { background: var(--ua) !important; }
+        .ua-glow { box-shadow: 0 0 20px rgba(var(--ua-rgb), 0.35) !important; }
+        @keyframes uni-fog { 0%,100% { opacity:0.55; transform:translateX(-1%); } 50% { opacity:0.75; transform:translateX(1%); } }
+        @keyframes uni-float { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-10px); } }
+        @keyframes uni-pulse { 0%,100% { opacity:0.4; } 50% { opacity:0.75; } }
+        .uni-fog { animation: uni-fog 14s ease-in-out infinite; }
+        .uni-float { animation: uni-float 7s ease-in-out infinite; }
+        .uni-pulse { animation: uni-pulse 3s ease-in-out infinite; }
       ` }} />
 
-      {/* Dynamic Ambient Background Spores */}
-      <div className="absolute inset-0 z-0 pointer-events-none">
-        <ParticleBackground />
-      </div>
-
-      {/* ── LEFT SIDEBAR (ORYVON Global Theme) ── */}
-      <Sidebar 
-        currentUniverseId={data.id}
-        currentUniverseTitle={data.title}
-        currentUniverseType={data.universeType}
-        currentUniverseImage={data.locations[0]?.image || data.backdrop}
-        activeTab={activeTab}
-        onTabChange={(tab: any) => {
-          playClick();
-          setActiveTab(tab);
+      {/* ══════════════════════════════════════════════════════════════════════
+          FLOATING NAV
+      ══════════════════════════════════════════════════════════════════════ */}
+      <nav
+        className="fixed top-0 left-0 right-0 z-50 transition-all duration-500"
+        style={{
+          background: navScrolled ? 'rgba(2,1,2,0.92)' : 'transparent',
+          backdropFilter: navScrolled ? 'blur(16px)' : 'none',
+          borderBottom: navScrolled ? `1px solid rgba(${rgb},0.12)` : 'none',
         }}
-        playClick={playClick}
-        playHover={playHover}
-      />
-
-      {/* ── MAIN CONTENT ZONE ── */}
-      <div className="flex-1 min-h-screen flex flex-col relative z-20 overflow-y-auto">
-        {/* Banner with widescreen scenery */}
-        <div className="relative w-full h-[40vh] md:h-[48vh] flex flex-col justify-end">
-          {/* Dark atmospheric gradients */}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#020102] via-[#020102]/60 to-transparent z-10" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#020102]/85 via-transparent to-transparent z-10" />
-          <img 
-            src={data.backdrop} 
-            alt={data.title}
-            className="absolute inset-0 w-full h-full object-cover filter brightness-[0.65] contrast-[1.08] saturate-[0.92]"
-          />
-
-          {/* Top Breadcrumb Navigation */}
-          <div className="absolute top-8 left-6 md:left-12 z-20 flex items-center gap-2.5 font-mono text-[7.5px] text-white/40 tracking-[0.3em] uppercase">
-            <span className="cursor-none hover:text-white" onClick={() => router.push('/')}>ORYVON</span>
-            <span>/</span>
-            <span className="cursor-none hover:text-white" onClick={() => router.push('/')}>{t('uni.realms')}</span>
-            <span className="uni-text font-semibold">{data.title}</span>
-          </div>
-
-          {/* Leave Realm Button */}
-          <button 
+      >
+        <div className="max-w-screen-2xl mx-auto px-6 md:px-12 h-14 flex items-center justify-between">
+          {/* Back to portal */}
+          <button
             onClick={() => { playClick(); router.push('/'); }}
-            className="absolute top-6 right-6 md:right-12 z-20 px-4 py-1.5 rounded-full border border-white/10 uni-border-hover bg-black/40 backdrop-blur-md font-mono text-[8px] tracking-[0.25em] text-white/60 uni-text-hover transition-all duration-300 cursor-none"
             onMouseEnter={() => playHover()}
+            className="flex items-center gap-2 group"
           >
-            {t('uni.leaveRealm')}
+            <span className="text-white/40 group-hover:text-white/80 transition-colors text-lg leading-none">‹</span>
+            <span className="font-mono text-[9px] tracking-[0.3em] text-white/40 group-hover:text-white/80 uppercase transition-colors">ORYVON</span>
           </button>
 
-          {/* Epic Header Title */}
-          <div className="w-full max-w-[1720px] mx-auto px-6 md:px-12 pb-6 relative z-20 flex flex-col gap-2.5">
-            <div className="flex items-center gap-3">
-              <span className="uni-bg uni-border px-3 py-0.5 rounded font-mono text-[7.5px] uni-text tracking-[0.15em] uppercase">
-                {data.universeType}
-              </span>
-              <span className="bg-white/5 border border-white/10 px-2.5 py-0.5 rounded font-mono text-[7.5px] text-white/50 tracking-[0.1em]">
-                {t('uni.release')} {data.releaseYears}
-              </span>
-              <span className="font-mono text-[7.5px] uni-text tracking-[0.1em]">
-                ★ {data.rating}
-              </span>
-            </div>
-
-            <h1 className="text-3xl md:text-5xl lg:text-6xl font-normal tracking-[0.22em] text-white mt-1 uppercase" style={{ fontFamily: "'Cinzel', serif", textShadow: '0 4px 20px rgba(0,0,0,0.85)' }}>
-              {data.title}
-            </h1>
-
-            <p className="font-sans text-[12px] md:text-[13px] text-white/80 max-w-2xl leading-relaxed italic font-light tracking-wide mt-2">
-              "{data.tagline}"
-            </p>
-          </div>
-        </div>
-
-        {/* ── STICKY TAB BAR CONSOLE ── */}
-        <div className="w-full border-y border-white/5 bg-[#040306]/85 backdrop-blur-md sticky top-0 z-30">
-          <div className="w-full max-w-[1720px] mx-auto px-4 overflow-x-auto flex justify-between scrollbar-none">
-            {TABS.map(tab => (
+          {/* Desktop nav links */}
+          <div className="hidden md:flex items-center gap-8">
+            {NAV_LABELS.map(({ key, label }) => (
               <button
-                key={tab.id}
-                onClick={() => { playClick(); setActiveTab(tab.id); }}
+                key={key}
+                onClick={() => scrollTo(sectionRefs[key])}
                 onMouseEnter={() => playHover()}
-                className={`py-5 px-5 font-mono text-[8.5px] tracking-[0.25em] uppercase transition-all duration-300 border-b relative whitespace-nowrap cursor-none ${
-                  activeTab === tab.id 
-                    ? 'uni-text uni-border-b' 
-                    : 'text-white/40 border-transparent hover:text-white/85'
-                }`}
+                className="font-mono text-[9px] tracking-[0.25em] uppercase text-white/45 hover:text-white transition-colors"
               >
-                {t(tab.labelKey)}
-                {activeTab === tab.id && (
-                  <div className="absolute bottom-0 left-[20%] right-[20%] h-[1.5px] uni-bg-solid uni-shadow" />
-                )}
+                {label}
               </button>
             ))}
           </div>
+
+          {/* Universe title (center, appears after scroll) */}
+          <div
+            className="absolute left-1/2 -translate-x-1/2 transition-all duration-500"
+            style={{ opacity: navScrolled ? 1 : 0, transform: `translateX(-50%) translateY(${navScrolled ? '0' : '-8px'})` }}
+          >
+            <span className="font-mono text-[10px] tracking-[0.35em] uppercase ua">{data.title}</span>
+          </div>
+
+          {/* Mobile hamburger */}
+          <button
+            className="md:hidden flex flex-col gap-1.5 p-2"
+            onClick={() => setNavOpen(v => !v)}
+          >
+            {[0,1,2].map(i => (
+              <span key={i} className="block w-5 h-[1.5px] bg-white/60" />
+            ))}
+          </button>
         </div>
 
-        {/* ── TABS CONTENT DOCK ── */}
-        <div className="flex-1 w-full max-w-[1720px] mx-auto px-6 md:px-12 py-10 relative z-20">
-          <div className="w-full animate-fade-in transition-opacity duration-500">
-            
-            {/* ── TAB 1: OVERVIEW (Fullscreen centerpiece panel) ── */}
-            {activeTab === 'overview' && (
-              <div className="flex flex-col gap-8 animate-fade-in w-full pb-10">
-                
-                {/* ROW 1: Widescreen Hero Section (2/3 width) + Map Panel (1/3 width) */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start w-full">
-                  
-                  {/* Hero Showcase Panel (8 cols) */}
-                  <div className="lg:col-span-8 relative h-[480px] rounded-2xl overflow-hidden border uni-border shadow-[0_24px_80px_rgba(0,0,0,0.65)] flex flex-col justify-between p-10 group bg-[#040605]">
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#020302] via-[#020302]/35 to-transparent z-10" />
-                    <img 
-                      src={data.backdrop} 
-                      alt={data.title} 
-                      className="absolute inset-0 w-full h-full object-cover filter brightness-[0.65] contrast-[1.08] saturate-[0.88] group-hover:scale-102 transition-transform duration-[8000ms]"
-                    />
-                    
-                    {/* Top Breadcrumb & Title */}
-                    <div className="relative z-20 flex flex-col gap-1">
-                      <span className="font-mono text-[7px] uni-text tracking-[0.35em] uppercase opacity-80">REALMS › UNIVERSE PORTAL › {data.title.toUpperCase()}</span>
-                      <h2 className="text-4xl md:text-5xl font-normal text-white uppercase tracking-wide font-serif leading-none mt-3" style={{ textShadow: '0 4px 20px rgba(0,0,0,0.95)' }}>
-                        {data.title}
-                      </h2>
-                      <p className="font-serif text-[12px] text-white/70 italic leading-relaxed max-w-xl mt-3.5">
-                        "{data.description.split('.')[0]}."
-                      </p>
-                    </div>
+        {/* Mobile dropdown */}
+        {navOpen && (
+          <div className="md:hidden bg-[#020102]/96 border-t border-white/5 py-4">
+            {NAV_LABELS.map(({ key, label }) => (
+              <button
+                key={key}
+                onClick={() => scrollTo(sectionRefs[key])}
+                className="block w-full text-left px-6 py-3 font-mono text-[10px] tracking-[0.25em] uppercase text-white/55 hover:text-white"
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
+      </nav>
 
-                    {/* Bottom Badges & Stats Counters */}
-                    <div className="relative z-20 flex flex-col gap-5">
-                      {/* Tags row */}
-                      <div className="flex flex-wrap gap-2">
-                        <span className="uni-bg border uni-border px-2.5 py-1 rounded font-mono text-[7.5px] uni-text tracking-wider">{t('uni.legendarySaga')}</span>
-                        <span className="uni-bg border uni-border px-2.5 py-1 rounded font-mono text-[7.5px] uni-text tracking-wider">{t('uni.cinematicDeck')}</span>
-                        <span className="uni-bg border uni-border px-2.5 py-1 rounded font-mono text-[7.5px] uni-text tracking-wider">{t('uni.interactive')}</span>
-                        <span className="bg-black/55 border border-white/5 px-2.5 py-1 rounded font-mono text-[7.5px] text-white/40 tracking-wider">{t('common.type')}: {data.universeType || 'Franchise'}</span>
-                        <span className="bg-black/55 border border-white/5 px-2.5 py-1 rounded font-mono text-[7.5px] uni-text tracking-wider">{t('uni.aaaCinematic')}</span>
-                      </div>
+      {/* ══════════════════════════════════════════════════════════════════════
+          HERO — FULLSCREEN
+      ══════════════════════════════════════════════════════════════════════ */}
+      <section ref={heroRef} className="relative w-full min-h-screen flex flex-col justify-end overflow-hidden">
+        {/* Background image */}
+        <img
+          src={data.backdrop}
+          alt={data.title}
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ filter: 'brightness(0.55) saturate(0.85)' }}
+        />
 
-                      {/* Statistical Counters Box */}
-                      <div className="grid grid-cols-5 gap-3 bg-black/45 backdrop-blur-md border border-white/5 rounded-xl p-4">
-                        {[
-                          { labelKey: 'stats.races', val: data.metrics?.races || '5+', icon: '🧬' },
-                          { labelKey: 'stats.factions', val: data.metrics?.factions || '8+', icon: '🛡️' },
-                          { labelKey: 'stats.characters', val: data.metrics?.characters || '50+', icon: '👤' },
-                          { labelKey: 'stats.events', val: data.metrics?.events || '30+', icon: '📜' },
-                          { labelKey: 'stats.locations', val: `${data.locations?.length || '12'}+`, icon: '📍' }
-                        ].map((item, idx) => (
-                          <div key={idx} className="flex items-center gap-2.5 border-r border-white/5 last:border-0 pr-1">
-                            <span className="text-lg shrink-0">{item.icon}</span>
-                            <div className="flex flex-col">
-                              <span className="font-mono text-[6.5px] text-white/30 uppercase tracking-widest leading-none">{t(item.labelKey)}</span>
-                              <span className="text-xs font-semibold uni-text font-serif leading-none mt-1.5">{item.val}</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
+        {/* Depth layers */}
+        <div className="absolute inset-0" style={{ background: `radial-gradient(ellipse at 50% 30%, ${accent}18 0%, transparent 65%)` }} />
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, transparent 0%, rgba(2,1,2,0.3) 50%, rgba(2,1,2,0.97) 100%)' }} />
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(to right, rgba(2,1,2,0.7) 0%, transparent 55%)' }} />
 
-                  {/* Right Map Panel (4 cols) */}
-                  <div className="lg:col-span-4 h-[480px] rounded-2xl border border-white/5 uni-border bg-[#050406]/95 p-6 flex flex-col justify-between shadow-2xl relative">
-                    <div className="absolute top-0 left-6 right-6 h-[1.5px] uni-gradient-line" />
-                    
-                    <div className="flex flex-col gap-3">
-                      <span className="font-mono text-[7px] uni-text tracking-[0.3em] uppercase">{data.title.toUpperCase()} {t('map.archive')}</span>
-                      <div className="h-[210px] rounded-xl overflow-hidden border border-white/5 relative mt-1.5 group">
-                        <div className="absolute inset-0 bg-gradient-to-t from-[#050406] via-transparent to-transparent z-10" />
-                        <img 
-                          src={data.locations[0]?.image || data.backdrop} 
-                          alt="World map preview" 
-                          className="w-full h-full object-cover brightness-[0.72] group-hover:scale-105 transition-transform duration-1000"
-                        />
-                      </div>
-                      <p className="font-serif text-[11.5px] text-white/55 leading-relaxed font-light mt-2">
-                        {data.description}
-                      </p>
-                    </div>
+        {/* Fog layer */}
+        <div
+          className="absolute bottom-0 left-0 right-0 h-48 pointer-events-none uni-fog"
+          style={{ background: `linear-gradient(to top, rgba(2,1,2,0.85) 0%, transparent 100%)` }}
+        />
 
-                    <button 
-                      onClick={() => { playClick(); setActiveTab('map'); }}
-                      className="w-full py-2.5 rounded border uni-border uni-border-hover uni-bg uni-text font-mono text-[8px] tracking-[0.25em] uppercase cursor-none transition-colors"
-                    >
-                      {t('uni.viewWorldMap')}
-                    </button>
-                  </div>
+        {/* Floating particles */}
+        {Array.from({ length: 18 }).map((_, i) => (
+          <div
+            key={i}
+            className="absolute rounded-full pointer-events-none uni-pulse"
+            style={{
+              width: 1.5 + (i % 3) * 0.8,
+              height: 1.5 + (i % 3) * 0.8,
+              left: `${(i * 17 + 5) % 100}%`,
+              top: `${(i * 23 + 10) % 80}%`,
+              background: accent,
+              opacity: 0.3 + (i % 4) * 0.1,
+              animationDelay: `${i * 0.4}s`,
+            }}
+          />
+        ))}
 
-                </div>
+        {/* Hero content */}
+        <div className="relative z-10 px-6 md:px-16 pb-20 md:pb-28 max-w-5xl">
+          {/* Badges */}
+          <div className="flex flex-wrap items-center gap-2.5 mb-6">
+            <span className="ua-bg ua-border border rounded font-mono text-[8px] tracking-[0.2em] uppercase ua px-3 py-1">{data.universeType}</span>
+            <span className="bg-white/5 border border-white/10 rounded font-mono text-[8px] text-white/50 px-3 py-1 tracking-wider">{data.releaseYears}</span>
+            <span className="font-mono text-[9px] ua">★ {data.rating}</span>
+          </div>
 
-                {/* ROW 2: The Story (1/3) + Featured Location (1/3) + Latest Event (1/3) */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch w-full">
-                  
-                  {/* Card 1: Story So Far */}
-                  <div className="rounded-2xl border border-white/5 uni-border bg-[#050406]/95 p-6 flex flex-col justify-between gap-5 shadow-2xl relative min-h-[220px]">
-                    <div className="absolute top-0 left-6 right-6 h-[1.5px] uni-gradient-line" />
-                    <div className="flex flex-col gap-3">
-                      <span className="font-mono text-[7px] uni-text uppercase tracking-widest block">{t('uni.storySoFar')}</span>
-                      <div className="grid grid-cols-3 gap-4 items-center">
-                        <p className="col-span-2 font-serif text-[11px] text-white/60 leading-relaxed font-light">
-                          {data.description.split('.')[1] ? `${data.description.split('.')[1]}.` : data.description}
-                        </p>
-                        <div className="h-[90px] rounded-lg overflow-hidden border border-white/5 relative">
-                          <img src={data.backdrop} alt="Story visual" className="w-full h-full object-cover filter brightness-[0.7]" />
-                        </div>
-                      </div>
-                    </div>
-                    <button 
-                      onClick={() => { playClick(); setActiveTab('timeline'); }}
-                      className="w-fit py-1.5 px-4 rounded border border-white/10 uni-border-hover bg-white/[0.01] hover:uni-bg text-white/70 hover:uni-text font-mono text-[8.5px] tracking-wider cursor-none transition-colors"
-                    >
-                      {t('uni.exploreTimeline')}
-                    </button>
-                  </div>
+          {/* Title */}
+          <h1
+            className="text-5xl sm:text-7xl md:text-8xl font-normal uppercase leading-none mb-6 text-white"
+            style={{ fontFamily: "'Cinzel', serif", textShadow: `0 0 80px ${accent}55, 0 4px 32px rgba(0,0,0,0.9)`, letterSpacing: '0.08em' }}
+          >
+            {data.title}
+          </h1>
 
-                  {/* Card 2: Featured Location */}
-                  <div className="rounded-2xl border border-white/5 uni-border bg-[#050406]/95 p-6 flex flex-col justify-between gap-5 shadow-2xl relative min-h-[220px]">
-                    <div className="absolute top-0 left-6 right-6 h-[1.5px] uni-gradient-line" />
-                    <div className="flex flex-col gap-3">
-                      <span className="font-mono text-[7px] uni-text uppercase tracking-widest block">{t('uni.featuredLocation')}</span>
-                      <div className="grid grid-cols-3 gap-4 items-center">
-                        <p className="col-span-2 font-serif text-[11px] text-white/60 leading-relaxed font-light">
-                          {data.locations[0]?.name ? `${data.locations[0].name}: ${data.locations[0].desc}` : 'Explore the key landmarks that define the boundary of this legendary world.'}
-                        </p>
-                        <div className="h-[90px] rounded-lg overflow-hidden border border-white/5 relative">
-                          <img src={data.locations[0]?.image || data.backdrop} alt="Featured Location" className="w-full h-full object-cover filter brightness-[0.7]" />
-                        </div>
-                      </div>
-                    </div>
-                    <button 
-                      onClick={() => { playClick(); setActiveTab('map'); }}
-                      className="w-fit py-1.5 px-4 rounded border border-white/10 uni-border-hover bg-white/[0.01] hover:uni-bg text-white/70 hover:uni-text font-mono text-[8.5px] tracking-wider cursor-none transition-colors"
-                    >
-                      EXPLORE LOCATION ›
-                    </button>
-                  </div>
+          {/* Subtitle */}
+          {data.subtitle && (
+            <p className="font-mono text-[11px] tracking-[0.35em] uppercase mb-5" style={{ color: accent + 'bb' }}>{data.subtitle}</p>
+          )}
 
-                  {/* Card 3: Latest Event */}
-                  <div className="rounded-2xl border border-white/5 uni-border bg-[#050406]/95 p-6 flex flex-col justify-between gap-5 shadow-2xl relative min-h-[220px]">
-                    <div className="absolute top-0 left-6 right-6 h-[1.5px] uni-gradient-line" />
-                    <div className="flex flex-col gap-3">
-                      <span className="font-mono text-[7px] uni-text uppercase tracking-widest block">{t('uni.latestEvent')}</span>
-                      <div className="grid grid-cols-3 gap-4 items-center">
-                        <p className="col-span-2 font-serif text-[11px] text-white/60 leading-relaxed font-light">
-                          {data.events[0]?.title ? `${data.events[0].title}: ${data.events[0].desc.substring(0, 80)}...` : 'The turning points of history that defined eras and shaped the current realm.'}
-                        </p>
-                        <div className="h-[90px] rounded-lg overflow-hidden border border-white/5 relative">
-                          <img src={data.events[0]?.image || data.backdrop} alt="Event visual" className="w-full h-full object-cover filter brightness-[0.7]" />
-                        </div>
-                      </div>
-                    </div>
-                    <button 
-                      onClick={() => { playClick(); setActiveTab('timeline'); }}
-                      className="w-fit py-1.5 px-4 rounded border border-white/10 uni-border-hover bg-white/[0.01] hover:uni-bg text-white/70 hover:uni-text font-mono text-[8.5px] tracking-wider cursor-none transition-colors"
-                    >
-                      VIEW EVENT ›
-                    </button>
-                  </div>
+          {/* Tagline */}
+          <p className="text-base md:text-lg text-white/70 italic font-light max-w-xl leading-relaxed mb-10" style={{ fontFamily: 'Georgia, serif' }}>
+            &ldquo;{data.tagline}&rdquo;
+          </p>
 
-                </div>
-
-                {/* ROW 3: Main Factions (1/3) + Popular Characters (1/3) + Media Gallery (1/3) */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch w-full">
-                  
-                  {/* Card 1: Main Factions */}
-                  <div className="rounded-2xl border border-white/5 uni-border bg-[#050406]/95 p-6 flex flex-col justify-between gap-5 shadow-2xl relative">
-                    <div className="absolute top-0 left-6 right-6 h-[1.5px] uni-gradient-line" />
-                    
-                    <div className="flex flex-col gap-4">
-                      <span className="font-mono text-[7.5px] uni-text uppercase tracking-widest block">MAIN FACTIONS</span>
-                      <div className="flex flex-col gap-3">
-                        {data.factions?.slice(0, 4).map((fac: any, idx: number) => (
-                          <div key={idx} className="flex items-center justify-between p-2.5 rounded border border-white/5 bg-black/40">
-                            <div className="flex items-center gap-3">
-                              <span className="text-xl shrink-0">{fac.emblem || '🛡️'}</span>
-                              <div className="flex flex-col">
-                                <span className="text-[10px] font-semibold text-white/90 font-serif leading-none">{fac.name}</span>
-                                <span className="font-mono text-[6.5px] text-white/30 uppercase tracking-widest leading-none mt-1">{fac.leader || 'Realm Leader'}</span>
-                              </div>
-                            </div>
-                            <span className="font-mono text-[7px] uni-text uppercase opacity-70">ACTIVE</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <button 
-                      onClick={() => { playClick(); setActiveTab('factions'); }}
-                      className="w-full py-2 rounded border border-white/10 uni-border-hover bg-white/[0.01] hover:uni-bg text-white/70 hover:uni-text font-mono text-[8.5px] tracking-wider cursor-none transition-colors"
-                    >
-                      VIEW ALL FACTIONS ›
-                    </button>
-                  </div>
-
-                  {/* Card 2: Popular Characters */}
-                  <div className="rounded-2xl border border-white/5 uni-border bg-[#050406]/95 p-6 flex flex-col justify-between gap-5 shadow-2xl relative">
-                    <div className="absolute top-0 left-6 right-6 h-[1.5px] uni-gradient-line" />
-                    
-                    <div className="flex flex-col gap-4">
-                      <span className="font-mono text-[7.5px] uni-text uppercase tracking-widest block">POPULAR CHARACTERS</span>
-                      <div className="grid grid-cols-5 gap-2 pb-1">
-                        {data.characters?.slice(0, 5).map((char: any, idx: number) => (
-                          <button
-                            key={idx}
-                            onClick={() => { playClick(); setActiveCharacterId(char.id); setActiveTab('characters'); }}
-                            className="flex flex-col items-center gap-1.5 shrink-0 group focus:outline-none cursor-none"
-                          >
-                            <div className="w-10 h-10 rounded-lg border border-white/10 uni-border-hover-solid bg-black/60 overflow-hidden relative shadow-[0_2px_8px_rgba(0,0,0,0.5)] transition-all duration-300 flex items-center justify-center">
-                              <img src={char.image || data.backdrop} alt={char.name} className="w-full h-full object-cover filter brightness-[0.8] group-hover:scale-105 transition-transform animate-fade-in" />
-                            </div>
-                            <div className="flex flex-col items-center leading-none text-center">
-                              <span className="text-[7.5px] font-serif text-white/80 group-hover:uni-text truncate w-14 font-semibold">{char.name.split(' ')[0]}</span>
-                              <span className="text-[6px] font-mono text-white/30 truncate w-14 block mt-0.5">{char.role.split(',')[0]}</span>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <button 
-                      onClick={() => { playClick(); setActiveTab('characters'); }}
-                      className="w-full py-2 rounded border border-white/10 uni-border-hover bg-white/[0.01] hover:uni-bg text-white/70 hover:uni-text font-mono text-[8.5px] tracking-wider cursor-none transition-colors"
-                    >
-                      VIEW ALL CHARACTERS ›
-                    </button>
-                  </div>
-
-                  {/* Card 3: Media Gallery */}
-                  <div className="rounded-2xl border border-white/5 uni-border bg-[#050406]/95 p-6 flex flex-col justify-between gap-5 shadow-2xl relative">
-                    <div className="absolute top-0 left-6 right-6 h-[1.5px] uni-gradient-line" />
-                    
-                    <div className="flex flex-col gap-4">
-                      <span className="font-mono text-[7.5px] uni-text uppercase tracking-widest block">MEDIA GALLERY</span>
-                      <div className="grid grid-cols-4 gap-2.5 h-[100px] overflow-hidden">
-                        {data.locations?.slice(0, 8).map((loc: any, idx: number) => (
-                          <div key={idx} className="h-10 rounded border border-white/5 overflow-hidden relative shadow group">
-                            <img src={loc.image} alt={loc.name} className="w-full h-full object-cover filter brightness-[0.7] group-hover:scale-105 transition-transform" />
-                          </div>
-                        ))}
-                      </div>
-                      {/* Media counter row */}
-                      <div className="grid grid-cols-4 gap-2 text-center bg-black/45 border border-white/5 rounded-lg py-1.5 px-1">
-                        <div className="flex flex-col">
-                          <span className="font-mono text-[6px] text-white/30">IMAGES</span>
-                          <span className="text-[8px] font-semibold uni-text leading-none mt-1">450+</span>
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="font-mono text-[6px] text-white/30">VIDEOS</span>
-                          <span className="text-[8px] font-semibold uni-text leading-none mt-1">80+</span>
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="font-mono text-[6px] text-white/30">DOCS</span>
-                          <span className="text-[8px] font-semibold uni-text leading-none mt-1">94+</span>
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="font-mono text-[6px] text-white/30">AUDIO</span>
-                          <span className="text-[8px] font-semibold uni-text leading-none mt-1">12+</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <button 
-                      onClick={() => { playClick(); setActiveTab('media'); }}
-                      className="w-full py-2 rounded border border-white/10 uni-border-hover bg-white/[0.01] hover:uni-bg text-white/70 hover:uni-text font-mono text-[8.5px] tracking-wider cursor-none transition-colors"
-                    >
-                      BROWSE GALLERY ›
-                    </button>
-                  </div>
-
-                </div>
-
-                {/* ROW 4: Horizontal Timeline Axis */}
-                <div className="col-span-12 rounded-2xl border border-white/5 uni-border bg-[#050406]/95 p-6 flex items-center justify-between gap-8 shadow-2xl relative">
-                  <div className="absolute top-0 left-6 right-6 h-[1.5px] uni-gradient-line" />
-                  
-                  <div className="flex flex-col gap-1 w-full max-w-4xl">
-                    <span className="font-mono text-[7.5px] uni-text uppercase tracking-widest">THE TIMELINE OF {data.title.toUpperCase()}</span>
-                    <p className="font-serif text-[11px] text-white/45">Explore the milestones that defined the trajectory of this universe.</p>
-                    
-                    {/* Timeline track */}
-                    <div className="flex items-center justify-between relative mt-5 py-4 w-full">
-                      <div className="absolute left-0 right-0 h-[1.5px] uni-timeline-track z-0" />
-                      {data.events?.slice(0, 7).map((node: any, idx: number) => (
-                        <div key={idx} className="flex flex-col items-center gap-2 relative z-10 group">
-                          <div className="w-3.5 h-3.5 rounded-full border border-white/15 bg-neutral-900 group-hover:uni-border-hover-solid group-hover:scale-110 flex items-center justify-center transition-all duration-300 shadow-[0_0_8px_rgba(var(--uni-accent-rgb),0.1)]">
-                            <div className="w-1.5 h-1.5 rounded-full uni-bg-solid" />
-                          </div>
-                          <div className="flex flex-col items-center leading-none text-center">
-                            <span className="text-[7.5px] font-serif text-white/70 group-hover:uni-text w-20 truncate">{node.title}</span>
-                            <span className="text-[6.5px] font-mono uni-text-dim mt-1 uppercase tracking-widest">{node.date}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <button 
-                    onClick={() => { playClick(); setActiveTab('timeline'); }}
-                    className="shrink-0 py-3.5 px-6 rounded border border-white/15 uni-border-hover uni-bg uni-text font-mono text-[8.5px] tracking-widest uppercase cursor-none transition-colors"
-                  >
-                    VIEW FULL TIMELINE ›
-                  </button>
-                </div>
-
-              </div>
-            )}
-
-            {/* ── TAB 2: TIMELINE (Interactive Master-Detail) ── */}
-            {activeTab === 'timeline' && (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start w-full">
-                {/* Left Event list scroll */}
-                <div className="lg:col-span-1 flex flex-col gap-3 max-h-[560px] overflow-y-auto pr-2 scrollbar-thin">
-                  {data.events.map((ev: any, idx: number) => (
-                    <button
-                      key={ev.id}
-                      onClick={() => { playClick(); setActiveTimelineIndex(idx); }}
-                      className={`p-4 rounded-lg border text-left transition-all duration-300 flex flex-col gap-1.5 cursor-none ${
-                        activeTimelineIndex === idx 
-                          ? 'uni-border-active-full uni-bg uni-text uni-shadow-sm' 
-                          : 'border-white/5 bg-[#050407] text-white/60 hover:text-white hover:bg-white/[0.02]'
-                      }`}
-                    >
-                      <span className="font-mono text-[7px] uni-text uppercase tracking-widest">{ev.date}</span>
-                      <span className="text-[11px] font-semibold tracking-wide truncate block">{ev.title}</span>
-                    </button>
-                  ))}
-                </div>
-
-                {/* Right detailed landscape slide */}
-                <div className="lg:col-span-2 p-8 rounded-xl border border-white/5 bg-[#050407]/95 flex flex-col gap-6 min-h-[460px] shadow-2xl">
-                  {data.events[activeTimelineIndex] && (
-                    <>
-                      <div className="relative w-full h-[280px] rounded-lg overflow-hidden border border-white/5">
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent z-10" />
-                        <img 
-                          src={data.events[activeTimelineIndex].image} 
-                          alt={data.events[activeTimelineIndex].title} 
-                          className="w-full h-full object-cover filter brightness-[0.7] contrast-[1.05]"
-                        />
-                        <span className="absolute bottom-4 left-4 z-20 font-mono text-[8px] uni-text tracking-[0.2em] uppercase">
-                          {data.events[activeTimelineIndex].date}
-                        </span>
-                      </div>
-
-                      <div className="flex flex-col gap-2">
-                        <h3 className="text-2xl font-normal tracking-wide text-white uppercase" style={{ fontFamily: "'Cinzel', serif" }}>
-                          {data.events[activeTimelineIndex].title}
-                        </h3>
-                        <p className="font-sans text-[13px] text-white/65 leading-relaxed font-light mt-1">
-                          {data.events[activeTimelineIndex].desc}
-                        </p>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* ── TAB 3: GEOGRAPHIC MAP ── */}
-            {activeTab === 'map' && (
-              <InteractiveMap universeId={data.id} />
-            )}
-
-            {/* ── TAB 4: CHARACTERS (Immersive Widescreen 3-Pane Layout) ── */}
-            {activeTab === 'characters' && (
-              <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-stretch w-full min-h-[580px]">
-                {/* 1. Left Sidebar List (Width: 20%) */}
-                <div className="lg:col-span-1 flex flex-col gap-4">
-                  {/* Search input */}
-                  <div className="relative">
-                    <input 
-                      type="text" 
-                      value={charSearch}
-                      onChange={(e) => setCharSearch(e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-lg border border-white/10 bg-black/60 font-mono text-[9px] tracking-wider text-white focus:outline-none focus:uni-border-focus"
-                      placeholder={t('char.search')}
-                    />
-                    <span className="absolute right-3.5 top-3 text-[10px] opacity-40">🔍</span>
-                  </div>
-
-                  {/* Character scroll list */}
-                  <div className="flex flex-col gap-2 max-h-[520px] overflow-y-auto pr-1 scrollbar-thin">
-                    {filteredCharacters.map((char: any) => (
-                      <button
-                        key={char.id}
-                        onClick={() => { playClick(); setActiveCharacterId(char.id); }}
-                        className={`p-3.5 rounded-lg border text-left transition-all duration-300 flex items-center gap-3.5 cursor-none ${
-                          activeCharacterId === char.id
-                            ? 'uni-border-active-full uni-bg uni-text uni-shadow-sm'
-                            : 'border-white/5 bg-[#050407] text-white/60 hover:text-white hover:bg-white/[0.02]'
-                        }`}
-                      >
-                        <div 
-                          className="w-8 h-8 rounded-full border flex items-center justify-center text-sm bg-black/50 shrink-0"
-                          style={{ borderColor: activeCharacterId === char.id ? 'var(--uni-accent)' : 'rgba(255,255,255,0.08)' }}
-                        >
-                          {char.relationships[0]?.avatar || '👤'}
-                        </div>
-                        <div className="flex flex-col min-w-0">
-                          <span className="text-[11.5px] font-semibold truncate block leading-tight">{char.name}</span>
-                          <span className="font-mono text-[7px] uni-text-dim uppercase tracking-widest truncate block mt-0.5">{char.role}</span>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 2. Middle Panel: Massive Portrait Card (Width: 45%) */}
-                <div className="lg:col-span-2 relative rounded-xl overflow-hidden border border-white/5 uni-border shadow-[0_24px_80px_rgba(0,0,0,0.65)] bg-[#09080a] flex flex-col justify-end p-8 group">
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#020102] via-[#020102]/30 to-transparent z-10" />
-                  <img 
-                    src={data.backdrop} 
-                    alt={activeChar?.name} 
-                    className="absolute inset-0 w-full h-full object-cover filter brightness-[0.72] contrast-[1.08] saturate-[0.88] group-hover:scale-102 transition-transform duration-1000"
-                  />
-                  <div className="relative z-20 flex flex-col gap-2">
-                    <span className="font-mono text-[8px] uni-text uppercase tracking-[0.25em]">{activeChar?.role}</span>
-                    <h3 className="text-3xl font-normal text-white uppercase tracking-wide" style={{ fontFamily: "'Cinzel', serif" }}>
-                      {activeChar?.name}
-                    </h3>
-                  </div>
-                </div>
-
-                {/* 3. Right Panel: Comprehensive Stats & Bio (Width: 35%) */}
-                <div className="lg:col-span-2 p-6 rounded-xl border border-white/5 bg-[#050407]/95 flex flex-col justify-between gap-5 shadow-2xl">
-                  {activeChar && (
-                    <>
-                      {/* Quote section */}
-                      <div className="p-4 rounded-lg bg-black/40 border border-white/5 uni-border-l border-l-2">
-                        <p className="font-sans text-[11px] text-white/70 italic leading-relaxed">
-                          "{activeChar.quote}"
-                        </p>
-                      </div>
-
-                      {/* Stats Table */}
-                      <div className="grid grid-cols-2 gap-3.5 bg-black/35 p-4 rounded-lg border border-white/5">
-                        {Object.entries(activeChar.stats).map(([k, v]) => (
-                          <div key={k} className="flex flex-col gap-0.5 border-b border-white/5 pb-2 last:border-0 last:pb-0">
-                            <span className="font-mono text-[7px] text-white/35 uppercase tracking-widest">{k.replace(/([A-Z])/g, ' $1').trim()}</span>
-                            <span className="text-[10px] text-white/85 font-medium">{v as any}</span>
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* Sub-tabs Row */}
-                      <div className="flex border-b border-white/5">
-                        {(['about', 'relationships', 'appearance', 'abilities', 'quotes'] as const).map(tabKey => (
-                          <button
-                            key={tabKey}
-                            onClick={() => setActiveCharTab(tabKey)}
-                            className={`pb-2.5 px-3 font-mono text-[7.5px] uppercase tracking-widest cursor-none border-b transition-colors ${
-                              activeCharTab === tabKey 
-                                ? 'uni-text uni-border-b' 
-                                : 'text-white/30 border-transparent hover:text-white/60'
-                            }`}
-                          >
-                            {t(`char.${tabKey}`)}
-                          </button>
-                        ))}
-                      </div>
-
-                      {/* Content bio */}
-                      <div className="p-1 min-h-[100px]">
-                        <p className="font-sans text-[11.5px] text-white/60 leading-relaxed font-light">
-                          {activeChar.tabs[activeCharTab]}
-                        </p>
-                      </div>
-
-                      {/* Key relationships avatars */}
-                      <div className="flex flex-col gap-2.5 mt-2">
-                        <span className="font-mono text-[7px] text-white/35 tracking-widest uppercase">Key Connections</span>
-                        <div className="flex gap-3">
-                          {activeChar.relationships.map((rel: any, idx: number) => (
-                            <button
-                              key={idx}
-                              onClick={() => {
-                                if (rel.charId) {
-                                  playClick();
-                                  setActiveCharacterId(rel.charId);
-                                }
-                              }}
-                              className="group/avatar flex flex-col items-center gap-1 cursor-none focus:outline-none"
-                            >
-                              <div className="w-8 h-8 rounded-full border border-white/10 uni-avatar-border bg-black/50 flex items-center justify-center text-sm transition-colors duration-300">
-                                {rel.avatar}
-                              </div>
-                              <span className="text-[7.5px] text-white/50 uni-avatar-text truncate max-w-[50px] font-sans">{rel.name.split(' ')[0]}</span>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* ── TAB 5: FAMILY TREE ── */}
-            {activeTab === 'familyTree' && (
-              <CinematicFamilyTree
-                title={data.familyTree.title}
-                members={data.familyTree.members}
-                accentColor={data.accentColor}
-                onViewCharacter={(charId) => {
-                  setActiveCharacterId(charId);
-                  setActiveTab('characters');
-                }}
-              />
-            )}
-
-            {/* ── TAB 6: FACTIONS (Master-Detail Sidebar) ── */}
-            {activeTab === 'factions' && (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start w-full">
-                {/* Left Factions list */}
-                <div className="lg:col-span-1 flex flex-col gap-3">
-                  {data.factions.map((fac: any, idx: number) => (
-                    <button
-                      key={fac.id}
-                      onClick={() => { playClick(); setActiveFactionIndex(idx); }}
-                      className={`p-4 rounded-lg border text-left transition-all duration-300 flex items-center justify-between cursor-none ${
-                        activeFactionIndex === idx 
-                          ? 'uni-border-active-full uni-bg uni-text uni-shadow-sm' 
-                          : 'border-white/5 bg-[#050407] text-white/60 hover:text-white hover:bg-white/[0.02]'
-                      }`}
-                    >
-                      <div className="flex flex-col gap-1">
-                        <span className="text-[12px] font-semibold tracking-wide block">{fac.name}</span>
-                        <span className="font-mono text-[7px] uni-text-dim uppercase tracking-widest block">OPERATIONAL LEDGER</span>
-                      </div>
-                      <span className="text-xl shrink-0">{fac.emblem}</span>
-                    </button>
-                  ))}
-                </div>
-
-                {/* Right detailed information */}
-                <div className="lg:col-span-2 p-6 rounded-xl border border-white/5 bg-[#050407]/95 flex flex-col gap-6 shadow-2xl">
-                  {activeFaction && (
-                    <>
-                      {/* Crest & header block */}
-                      <div className="flex flex-col md:flex-row items-center gap-6 border-b border-white/5 pb-5">
-                        <div className="w-16 h-16 rounded-full border uni-border-active-full uni-bg flex items-center justify-center text-3xl shadow-[0_0_20px_rgba(var(--uni-accent-rgb),0.15)] animate-pulse shrink-0">
-                          {activeFaction.emblem}
-                        </div>
-                        <div className="flex flex-col gap-1 text-center md:text-left">
-                          <h3 className="text-xl font-normal text-white uppercase tracking-wide" style={{ fontFamily: "'Cinzel', serif" }}>
-                            {activeFaction.name}
-                          </h3>
-                          <span className="font-mono text-[7.5px] uni-text tracking-[0.2em] uppercase">Sovereign alignment</span>
-                        </div>
-                      </div>
-
-                      {/* Description info */}
-                      <p className="font-sans text-[12.5px] text-white/65 leading-relaxed font-light">
-                        {activeFaction.desc}
-                      </p>
-
-                      {/* Leader details */}
-                      <div className="grid grid-cols-2 gap-4 bg-black/40 p-4 rounded-lg border border-white/5">
-                        <div className="flex flex-col gap-0.5">
-                          <span className="font-mono text-[7px] text-white/35 uppercase tracking-widest">Grand Commander / Leader</span>
-                          <span className="text-[10px] text-white/80 font-medium">{activeFaction.leader}</span>
-                        </div>
-                        <div className="flex flex-col gap-0.5">
-                          <span className="font-mono text-[7px] text-white/35 uppercase tracking-widest">Base coordinates</span>
-                          <span className="text-[10px] text-white/80 font-medium">{activeFaction.base}</span>
-                        </div>
-                      </div>
-
-                      {/* Key members avatars */}
-                      <div className="flex flex-col gap-2.5">
-                        <span className="font-mono text-[7px] text-white/35 tracking-widest uppercase">Prominent Members</span>
-                        <div className="flex gap-3">
-                          {activeFaction.members.map((mem: any, idx: number) => (
-                            <button
-                              key={idx}
-                              onClick={() => {
-                                if (mem.charId) {
-                                  playClick();
-                                  setActiveCharacterId(mem.charId);
-                                  setActiveTab('characters');
-                                }
-                              }}
-                              className="group/avatar flex items-center gap-2 p-2 rounded border border-white/5 uni-border-hover-solid bg-black/30 cursor-none transition-colors"
-                            >
-                              <div className="w-6 h-6 rounded-full border border-white/10 uni-avatar-border flex items-center justify-center text-xs bg-black/60 shrink-0">
-                                {mem.avatar}
-                              </div>
-                              <div className="flex flex-col max-w-[80px]">
-                                <span className="text-[8px] text-white/70 uni-avatar-text truncate font-semibold">{mem.name.split(' ')[0]}</span>
-                                <span className="text-[6.5px] text-white/30 truncate font-mono uppercase mt-0.5">{mem.role}</span>
-                              </div>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* ── TAB 7: LORE STUDIES (Interactive Relic Showcase with Dashed Radar) ── */}
-            {activeTab === 'lore' && (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start w-full">
-                {/* Left Lore list */}
-                <div className="lg:col-span-1 flex flex-col gap-3">
-                  {data.lore.map((l: any, idx: number) => (
-                    <button
-                      key={l.id}
-                      onClick={() => { playClick(); setActiveLoreIndex(idx); }}
-                      className={`p-4 rounded-lg border text-left transition-all duration-300 flex flex-col gap-1 cursor-none ${
-                        activeLoreIndex === idx 
-                          ? 'uni-border-active-full uni-bg uni-text uni-shadow-sm' 
-                          : 'border-white/5 bg-[#050407] text-white/60 hover:text-white hover:bg-white/[0.02]'
-                      }`}
-                    >
-                      <span className="text-[12px] font-semibold tracking-wide block">{l.title}</span>
-                      <span className="font-mono text-[7px] uni-text-dim uppercase tracking-widest block">Scroll Manuscript</span>
-                    </button>
-                  ))}
-                </div>
-
-                {/* Right detailed narrative relic card */}
-                <div className="lg:col-span-2 p-8 rounded-xl border border-white/5 bg-[#050407]/95 flex flex-col gap-6 shadow-2xl items-center relative overflow-hidden min-h-[480px]">
-                  {activeLore && (
-                    <>
-                      {/* Decorative glowing circular radar background */}
-                      {activeLore.circularRadar && (
-                        <div className="absolute top-[10%] w-80 h-80 border border-dashed uni-border-dashed-1 rounded-full animate-spin [animation-duration:45s] pointer-events-none flex items-center justify-center z-0">
-                          <div className="w-[85%] h-[85%] border border-dashed uni-border-dashed-2 rounded-full" />
-                        </div>
-                      )}
-
-                      {/* Glowing relic show */}
-                      <div className="w-36 h-36 rounded-full border uni-border uni-gradient-bg flex items-center justify-center text-5xl shadow-[0_0_40px_rgba(var(--uni-accent-rgb),0.15)] relative z-10 mt-6">
-                        👑
-                      </div>
-
-                      {/* Lore text info */}
-                      <div className="flex flex-col gap-2 text-center relative z-10 max-w-lg mt-2">
-                        <span className="font-mono text-[7.5px] uni-text uppercase tracking-[0.3em]">Featured Relic / Chronicle</span>
-                        <h3 className="text-2xl font-normal text-white uppercase tracking-wide mt-1" style={{ fontFamily: "'Cinzel', serif" }}>
-                          {activeLore.title}
-                        </h3>
-                        <p className="font-sans text-[13px] text-white/60 leading-relaxed font-light mt-3">
-                          {activeLore.desc}
-                        </p>
-                      </div>
-
-                      <div className="w-full h-px bg-white/5 mt-4 relative z-10" />
-
-                      <span className="font-mono text-[7px] text-white/25 tracking-widest uppercase relative z-10">
-                        Manuscript Record // ORYVON-LORE-{activeLore.id.toUpperCase()}
-                      </span>
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* ── TAB 8: HISTORICAL EVENTS ── */}
-            {activeTab === 'events' && (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start w-full">
-                {/* Left Event list scroll */}
-                <div className="lg:col-span-1 flex flex-col gap-3">
-                  {data.events.map((ev: any, idx: number) => (
-                    <button
-                      key={ev.id}
-                      onClick={() => { playClick(); setActiveEventIndex(idx); }}
-                      className={`p-4 rounded-lg border text-left transition-all duration-300 flex flex-col gap-1 cursor-none ${
-                        activeEventIndex === idx 
-                          ? 'uni-border-active-full uni-bg uni-text uni-shadow-sm' 
-                          : 'border-white/5 bg-[#050407] text-white/60 hover:text-white hover:bg-white/[0.02]'
-                      }`}
-                    >
-                      <span className={`font-mono text-[7px] uppercase tracking-widest ${activeEventIndex === idx ? 'uni-text' : 'uni-text-dim'}`}>{ev.date}</span>
-                      <span className="text-[11px] font-semibold tracking-wide truncate block">{ev.title}</span>
-                    </button>
-                  ))}
-                </div>
-
-                {/* Right detailed landscape slide */}
-                <div className="lg:col-span-2 p-8 rounded-xl border border-white/5 bg-[#050407]/95 flex flex-col gap-5 min-h-[460px] shadow-2xl w-full">
-                  {activeEvent && (
-                    <>
-                      <div className="relative w-full h-[280px] rounded-lg overflow-hidden border border-white/5">
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent z-10" />
-                        <img 
-                          src={activeEvent.image} 
-                          alt={activeEvent.title} 
-                          className="w-full h-full object-cover filter brightness-[0.7] contrast-[1.05]"
-                        />
-                        <span className="absolute bottom-4 left-4 z-20 font-mono text-[8px] uni-text tracking-[0.2em] uppercase font-semibold">
-                          {activeEvent.date}
-                        </span>
-                      </div>
-
-                      <div className="flex flex-col gap-2">
-                        <h3 className="text-2xl font-normal tracking-wide text-white uppercase" style={{ fontFamily: "'Cinzel', serif" }}>
-                          {activeEvent.title}
-                        </h3>
-                        <p className="font-sans text-[13px] text-white/65 leading-relaxed font-light mt-1">
-                          {activeEvent.desc}
-                        </p>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* ── TAB 9: MEDIA ARCHIVES (High density structured columns) ── */}
-            {activeTab === 'media' && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch w-full">
-                {/* Column 1: Cinematic Images & Artifacts */}
-                <div className="p-6 rounded-xl border border-white/5 bg-[#050407]/95 flex flex-col gap-5 shadow-2xl">
-                  <div className="border-b border-white/5 pb-3">
-                    <span className="font-mono text-[7px] uni-text uppercase tracking-widest">Images & Relics</span>
-                    <h4 className="text-[11.5px] font-semibold text-white/90 tracking-wide mt-0.5 uppercase">MANUSCRIPT VISUALS</h4>
-                  </div>
-
-                  <div className="flex flex-col gap-4 flex-1 overflow-y-auto max-h-[380px] scrollbar-none">
-                    {data.media.images.map((img: any, idx: number) => (
-                      <div key={idx} className="group/item relative h-32 rounded-lg overflow-hidden border border-white/5 flex flex-col justify-end p-4">
-                        <img src={img.url} alt={img.title} className="absolute inset-0 w-full h-full object-cover opacity-35 group-hover/item:opacity-55 transition-opacity duration-300" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/35 to-transparent z-10" />
-                        <span className="relative z-20 text-[9.5px] font-medium text-white/90 truncate leading-snug">{img.title}</span>
-                      </div>
-                    ))}
-                    {data.media.artifacts.map((art: any, idx: number) => (
-                      <div key={idx} className="flex justify-between items-center p-3.5 rounded bg-white/[0.01] border border-white/5 text-[9.5px]">
-                        <span className="text-white/65 font-sans">Relic: {art.title}</span>
-                        <span className="font-mono uni-text font-semibold text-[8px]">{art.count} Unit</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Column 2: Video Broadcasts & reels */}
-                <div className="p-6 rounded-xl border border-white/5 bg-[#050407]/95 flex flex-col gap-5 shadow-2xl">
-                  <div className="border-b border-white/5 pb-3">
-                    <span className="font-mono text-[7px] uni-text uppercase tracking-widest">Broadcast Reels</span>
-                    <h4 className="text-[11.5px] font-semibold text-white/90 tracking-wide mt-0.5 uppercase">VIDEO ARCHIVES</h4>
-                  </div>
-
-                  <div className="flex flex-col gap-3 flex-1 overflow-y-auto max-h-[380px] scrollbar-none">
-                    {data.media.videos.map((vid: any, idx: number) => (
-                      <div key={idx} className="group/reel p-4 rounded-lg border border-white/5 uni-border-hover bg-black/40 hover:bg-black/60 flex items-center justify-between transition-all duration-300">
-                        <div className="flex flex-col gap-0.5">
-                          <span className="text-[10px] text-white/80 font-medium group-hover/reel:text-amber-200 uni-reel-text truncate max-w-[150px] block">{vid.title}</span>
-                          <span className="font-mono text-[7px] text-white/35">Duration: {vid.duration}</span>
-                        </div>
-                        <button onClick={() => playClick()} className="w-7 h-7 rounded-full border border-white/10 uni-border-hover-solid bg-black/60 flex items-center justify-center text-[10px] uni-text-hover cursor-none transition-colors">
-                          ▶
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Column 3: Soundtracks & Book scroll details */}
-                <div className="p-6 rounded-xl border border-white/5 bg-[#050407]/95 flex flex-col gap-5 shadow-2xl">
-                  <div className="border-b border-white/5 pb-3">
-                    <span className="font-mono text-[7px] uni-text uppercase tracking-widest">Orchestral Flutes</span>
-                    <h4 className="text-[11.5px] font-semibold text-white/90 tracking-wide mt-0.5 uppercase">SOUNDTRACKS & MANUSCRIPTS</h4>
-                  </div>
-
-                  <div className="flex flex-col gap-3 flex-1 overflow-y-auto max-h-[380px] scrollbar-none">
-                    {data.media.soundtracks.map((snd: any, idx: number) => (
-                      <div key={idx} className="group/snd p-4 rounded-lg border border-white/5 uni-border-hover bg-black/40 hover:bg-black/60 flex items-center justify-between transition-all duration-300">
-                        <div className="flex flex-col gap-0.5">
-                          <span className="text-[10px] text-white/80 font-medium group-hover/snd:text-amber-200 uni-snd-text truncate max-w-[150px] block">{snd.title}</span>
-                          <span className="font-mono text-[7px] text-white/35">Duration: {snd.duration}</span>
-                        </div>
-                        <button onClick={() => playClick()} className="w-7 h-7 rounded-full border border-white/10 uni-border-hover-solid bg-black/60 flex items-center justify-center text-[10px] uni-text-hover cursor-none transition-colors">
-                          ▶
-                        </button>
-                      </div>
-                    ))}
-                    {data.media.documents.map((doc: any, idx: number) => (
-                      <div key={idx} className="flex justify-between items-center p-3.5 rounded bg-white/[0.01] border border-white/5 text-[9.5px] mt-2">
-                        <span className="text-white/60 font-sans truncate max-w-[130px] block">Book: {doc.title}</span>
-                        <span className="font-mono uni-text font-semibold text-[7px]">{doc.count} copy</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
+          {/* CTA buttons */}
+          <div className="flex flex-wrap gap-4">
+            <button
+              onClick={() => { playClick(); scrollTo(charsRef); }}
+              onMouseEnter={() => playHover()}
+              className="px-8 py-3.5 rounded-lg font-mono text-[10px] tracking-[0.25em] uppercase text-black font-bold transition-all duration-300 hover:scale-105 ua-solid"
+              style={{ boxShadow: `0 8px 30px ${accent}55` }}
+            >
+              Enter Universe
+            </button>
+            <button
+              onClick={() => { playClick(); scrollTo(tlRef); }}
+              onMouseEnter={() => playHover()}
+              className="px-8 py-3.5 rounded-lg font-mono text-[10px] tracking-[0.25em] uppercase border text-white/80 hover:text-white bg-white/5 hover:bg-white/10 transition-all duration-300 ua-border"
+            >
+              View Timeline
+            </button>
           </div>
         </div>
-      </div>
-    </main>
+
+        {/* Stats strip */}
+        <div
+          className="relative z-10 border-t border-b px-6 md:px-16 py-5 flex items-center gap-8 md:gap-16 overflow-x-auto"
+          style={{ borderColor: `rgba(${rgb},0.15)`, background: 'rgba(2,1,2,0.6)', backdropFilter: 'blur(12px)' }}
+        >
+          {[
+            { label: 'Characters', val: data.metrics?.characters || '50+' },
+            { label: 'Factions', val: data.metrics?.factions || '8+' },
+            { label: 'Races', val: data.metrics?.races || '5+' },
+            { label: 'Events', val: data.metrics?.events || '30+' },
+            { label: 'Locations', val: `${data.locations?.length || 0}` },
+          ].map((s, i) => (
+            <div key={i} className="shrink-0 flex flex-col items-center text-center">
+              <span className="text-2xl font-bold ua" style={{ fontFamily: "'Cinzel', serif" }}>{s.val}</span>
+              <span className="font-mono text-[8px] tracking-[0.25em] uppercase text-white/35 mt-1">{s.label}</span>
+            </div>
+          ))}
+          {/* Scroll hint */}
+          <div className="hidden md:flex ml-auto shrink-0 flex-col items-center gap-1.5 uni-float">
+            <div className="w-[1px] h-8 ua-solid" style={{ background: `linear-gradient(to bottom, transparent, ${accent})` }} />
+            <span className="font-mono text-[7px] tracking-[0.3em] uppercase text-white/30">Scroll</span>
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          CHARACTERS
+      ══════════════════════════════════════════════════════════════════════ */}
+      <section ref={charsRef} className="pt-20 pb-10">
+        <RowHeader title="Characters" sub="Inhabitants of the Realm" accent={accent} />
+
+        {/* Scroll row */}
+        <ScrollRow className="px-6 md:px-16">
+          {data.characters?.map((char: any) => (
+            <CharCard
+              key={char.id}
+              char={char}
+              accent={accent}
+              onClick={() => { playClick(); setActiveChar(char); setCharTab('about'); }}
+            />
+          ))}
+        </ScrollRow>
+
+        {/* Active character detail panel */}
+        {activeChar && (
+          <div
+            className="mx-6 md:mx-16 mt-8 rounded-2xl overflow-hidden"
+            style={{ border: `1px solid rgba(${rgb},0.2)`, background: 'rgba(6,4,8,0.92)' }}
+          >
+            <div className="grid grid-cols-1 md:grid-cols-12">
+              {/* Portrait */}
+              <div className="md:col-span-3 relative h-72 md:h-auto">
+                <img
+                  src={activeChar.image || '/Images/gandalf_portrait.png'}
+                  alt={activeChar.name}
+                  className="absolute inset-0 w-full h-full object-cover"
+                  style={{ filter: 'brightness(0.8) saturate(0.85)' }}
+                />
+                <div className="absolute inset-0" style={{ background: `linear-gradient(to right, transparent 60%, rgba(6,4,8,0.95) 100%)` }} />
+                <div className="absolute inset-0" style={{ background: `linear-gradient(to top, rgba(6,4,8,0.95) 0%, transparent 40%)` }} />
+              </div>
+
+              {/* Info */}
+              <div className="md:col-span-9 p-8 flex flex-col gap-6">
+                <div>
+                  <div className="flex items-center gap-3 mb-1">
+                    <p className="font-mono text-[8px] tracking-[0.3em] uppercase ua">{activeChar.role}</p>
+                  </div>
+                  <h3 className="text-3xl md:text-4xl text-white font-normal" style={{ fontFamily: "'Cinzel', serif" }}>{activeChar.name}</h3>
+                </div>
+
+                {/* Stat chips */}
+                {activeChar.stats && (
+                  <div className="flex flex-wrap gap-2">
+                    {Object.entries(activeChar.stats).slice(0, 6).map(([k, v]) => (
+                      <span key={k} className="px-3 py-1 rounded-full font-mono text-[8px] border" style={{ borderColor: `rgba(${rgb},0.2)`, background: `rgba(${rgb},0.07)`, color: 'rgba(255,255,255,0.65)' }}>
+                        <span style={{ color: accent }}>{k}:</span> {v as string}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Tab strip */}
+                <div className="flex gap-0 border-b" style={{ borderColor: `rgba(${rgb},0.15)` }}>
+                  {(['about', 'abilities', 'quotes'] as const).map(t => (
+                    <button
+                      key={t}
+                      onClick={() => setCharTab(t)}
+                      className="px-5 py-2.5 font-mono text-[9px] tracking-[0.2em] uppercase transition-colors relative"
+                      style={{ color: charTab === t ? accent : 'rgba(255,255,255,0.4)' }}
+                    >
+                      {t}
+                      {charTab === t && <div className="absolute bottom-0 left-0 right-0 h-[2px] ua-solid" />}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Tab content */}
+                <div className="text-[13px] text-white/65 leading-relaxed font-light" style={{ fontFamily: 'Georgia, serif', minHeight: 80 }}>
+                  {charTab === 'about' && (activeChar.tabs?.about || activeChar.desc || '')}
+                  {charTab === 'abilities' && (activeChar.tabs?.abilities || 'No ability data recorded.')}
+                  {charTab === 'quotes' && <em>&ldquo;{activeChar.tabs?.quotes || activeChar.quote || 'No quotes recorded.'}&rdquo;</em>}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          FACTIONS
+      ══════════════════════════════════════════════════════════════════════ */}
+      <section ref={factionsRef} className="pt-16 pb-10">
+        <RowHeader title="Factions &amp; Kingdoms" sub="Powers of the Realm" accent={accent} />
+        <ScrollRow className="px-6 md:px-16">
+          {data.factions?.map((fac: any, i: number) => (
+            <FactionCard key={i} fac={fac} accent={accent} />
+          ))}
+        </ScrollRow>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          TIMELINE
+      ══════════════════════════════════════════════════════════════════════ */}
+      <section ref={tlRef} className="pt-16 pb-16" style={{ background: `linear-gradient(180deg, transparent 0%, rgba(${rgb},0.04) 50%, transparent 100%)` }}>
+        <RowHeader title="Timeline of Events" sub="Ages &amp; Turning Points" accent={accent} />
+
+        {/* Event cards scroll */}
+        <ScrollRow className="px-6 md:px-16 mb-8">
+          {data.events?.map((ev: any, i: number) => (
+            <TimelineCard
+              key={ev.id || i}
+              ev={ev}
+              idx={i}
+              accent={accent}
+              active={activeTLIdx === i}
+              onClick={() => { playClick(); setActiveTLIdx(i); }}
+            />
+          ))}
+        </ScrollRow>
+
+        {/* Active event detail */}
+        {activeEvent && (
+          <div className="mx-6 md:mx-16 rounded-2xl p-8 md:p-10 grid grid-cols-1 md:grid-cols-2 gap-8 items-center"
+            style={{ border: `1px solid rgba(${rgb},0.18)`, background: 'rgba(6,4,8,0.88)' }}
+          >
+            <div>
+              <p className="font-mono text-[9px] tracking-[0.3em] uppercase ua mb-3">{activeEvent.date}</p>
+              <h3 className="text-2xl md:text-3xl text-white font-normal mb-4" style={{ fontFamily: "'Cinzel', serif" }}>{activeEvent.title}</h3>
+              <p className="text-[14px] text-white/65 leading-relaxed font-light" style={{ fontFamily: 'Georgia, serif' }}>{activeEvent.desc}</p>
+            </div>
+            <div className="relative h-56 rounded-xl overflow-hidden">
+              <img
+                src={activeEvent.image || data.backdrop}
+                alt={activeEvent.title}
+                className="absolute inset-0 w-full h-full object-cover"
+                style={{ filter: 'brightness(0.65) saturate(0.8)' }}
+              />
+              <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${accent}22 0%, transparent 60%)` }} />
+              <div className="absolute bottom-3 left-3 font-mono text-[8px] tracking-[0.25em] uppercase ua">{activeEvent.era || 'Age of Legend'}</div>
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          LORE
+      ══════════════════════════════════════════════════════════════════════ */}
+      <section ref={loreRef} className="pt-16 pb-10">
+        <RowHeader title="Lore &amp; Codex" sub="Secrets of the Archive" accent={accent} />
+        <ScrollRow className="px-6 md:px-16">
+          {data.lore?.map((item: any, i: number) => (
+            <div
+              key={i}
+              className="shrink-0 rounded-xl p-6 flex flex-col gap-4"
+              style={{
+                width: 'clamp(240px,28vw,300px)',
+                scrollSnapAlign: 'start',
+                border: `1px solid rgba(${rgb},0.18)`,
+                background: 'rgba(8,5,10,0.9)',
+              }}
+            >
+              <div className="text-2xl">{item.icon || '📜'}</div>
+              <div>
+                <p className="font-mono text-[8px] tracking-[0.3em] uppercase ua mb-2">{item.type || 'Lore'}</p>
+                <h4 className="text-[15px] font-semibold text-white leading-snug mb-3" style={{ fontFamily: "'Cinzel', serif" }}>{item.title}</h4>
+                <p className="text-[12px] text-white/55 leading-relaxed line-clamp-4" style={{ fontFamily: 'Georgia, serif' }}>{item.desc}</p>
+              </div>
+            </div>
+          ))}
+          {(!data.lore || data.lore.length === 0) && (
+            <p className="font-mono text-[11px] text-white/25 px-1">No lore entries recorded.</p>
+          )}
+        </ScrollRow>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          MAP / LOCATIONS
+      ══════════════════════════════════════════════════════════════════════ */}
+      <section ref={mapRef} className="pt-16 pb-10">
+        <RowHeader title="World Map &amp; Locations" sub="Known Territories" accent={accent} />
+
+        {/* Featured map image */}
+        <div className="mx-6 md:mx-16 mb-8 relative rounded-2xl overflow-hidden h-72 md:h-96">
+          <img
+            src={data.locations?.[0]?.image || data.backdrop}
+            alt="World Map"
+            className="absolute inset-0 w-full h-full object-cover"
+            style={{ filter: 'brightness(0.6) saturate(0.8)' }}
+          />
+          <div className="absolute inset-0" style={{ background: `radial-gradient(ellipse at center, ${accent}18 0%, rgba(2,1,2,0.6) 100%)` }} />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="text-center">
+              <p className="font-mono text-[10px] tracking-[0.4em] uppercase text-white/40 mb-2">Interactive Map</p>
+              <p className="text-sm text-white/25">Zoomable world map — coming soon</p>
+            </div>
+          </div>
+          <div className="absolute bottom-0 left-0 right-0 h-24" style={{ background: 'linear-gradient(to top, rgba(2,1,2,0.9) 0%, transparent 100%)' }} />
+        </div>
+
+        {/* Location cards */}
+        <ScrollRow className="px-6 md:px-16">
+          {data.locations?.map((loc: any, i: number) => (
+            <LocCard key={i} loc={loc} />
+          ))}
+        </ScrollRow>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          GALLERY
+      ══════════════════════════════════════════════════════════════════════ */}
+      <section ref={galleryRef} className="pt-16 pb-24">
+        <RowHeader title="Gallery" sub="Visual Archive" accent={accent} />
+        <ScrollRow className="px-6 md:px-16">
+          {[...( data.locations || []), ...(data.events?.slice(0,4) || [])].map((item: any, i: number) => (
+            <div
+              key={i}
+              className="shrink-0 rounded-xl overflow-hidden relative"
+              style={{ width: 'clamp(200px,22vw,260px)', height: 160, scrollSnapAlign: 'start' }}
+            >
+              <img
+                src={item.image || data.backdrop}
+                alt={item.name || item.title}
+                className="absolute inset-0 w-full h-full object-cover"
+                style={{ filter: 'brightness(0.65) saturate(0.85)' }}
+              />
+              <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(2,1,2,0.8) 0%, transparent 60%)' }} />
+              <p className="absolute bottom-3 left-3 right-3 font-mono text-[9px] tracking-[0.2em] uppercase text-white/60 truncate">{item.name || item.title}</p>
+            </div>
+          ))}
+        </ScrollRow>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          FOOTER STRIP
+      ══════════════════════════════════════════════════════════════════════ */}
+      <footer
+        className="px-6 md:px-16 py-10 flex items-center justify-between border-t"
+        style={{ borderColor: `rgba(${rgb},0.12)`, background: 'rgba(2,1,2,0.6)' }}
+      >
+        <div>
+          <p className="font-mono text-[8px] tracking-[0.35em] uppercase ua mb-1">{data.universeType}</p>
+          <p className="text-[15px] font-normal text-white/50" style={{ fontFamily: "'Cinzel', serif" }}>{data.title}</p>
+        </div>
+        <button
+          onClick={() => { playClick(); pageRef.current?.scrollTo({ top: 0, behavior: 'smooth' }); }}
+          className="font-mono text-[9px] tracking-[0.25em] uppercase text-white/35 hover:text-white transition-colors"
+        >
+          ↑ Back to top
+        </button>
+      </footer>
+    </div>
   );
 }
