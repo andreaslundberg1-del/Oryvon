@@ -24,7 +24,14 @@ export const metadata: Metadata = {
   title: "ORYVON — The Dimensional Archive",
   description: "An interactive portal through time, civilizations, and the evolution of worlds.",
   icons: {
-    icon: "/favicon.png",
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/favicon.png", sizes: "any" },
+    ],
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+    shortcut: "/favicon.svg",
   },
 };
 
