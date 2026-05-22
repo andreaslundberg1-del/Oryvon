@@ -3,7 +3,7 @@
 
 import React, { useRef, useMemo, useEffect } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, Stars } from '@react-three/drei';
+import { OrbitControls, Sky } from '@react-three/drei';
 import * as THREE from 'three';
 
 // ─── Seeded pseudo-random (deterministic) ────────────────────────────────────
@@ -240,13 +240,13 @@ function middleEarthHeight(nx: number, ny: number): number {
   const eredRidge = gaussRidge(nx, ny, eredPts, 0.018, 0.35);
 
   // ── 11. MORDOR INTERIOR — low volcanic ash plateau ────────────────────────
-  // Inside the ring, slightly elevated above sea level but BELOW the walls.
-  // Uses warped noise so it doesn't look flat.
-  const inMordorBasin =
-    nx > 0.585 && nx < 0.745 && ny > 0.540 && ny < 0.715;
-  const mordorPlateau = inMordorBasin
-    ? 0.18 + warpedFbm(nx * 9, ny * 9, 3, 99, 0.2) * 0.05
-    : 0.0;
+  // Smooth Gaussian well centred on Mordor basin — NO hard box.
+  const mordorBasin = gaussPeak(nx, ny, 0.665, 0.628, 0.075, 0.16)
+    * clamp((nx - 0.590) / 0.03)
+    * clamp((0.745 - nx) / 0.03)
+    * clamp((ny - 0.542) / 0.02)
+    * clamp((0.712 - ny) / 0.02);
+  const mordorPlateau = mordorBasin * (1 + warpedFbm(nx * 9, ny * 9, 3, 99, 0.2) * 0.28);
 
   // ── 12. MOUNT DOOM ────────────────────────────────────────────────────────
   // Gaussian peak, sigma=0.016 → very localised, realistic volcanic cone.
@@ -286,14 +286,21 @@ function middleEarthHeight(nx: number, ny: number): number {
   const detail = warpedFbm(nx * 11, ny * 11, 3, 42, 0.25) * 0.045;
 
   // ── COMPOSITE ─────────────────────────────────────────────────────────────
-  const structuralRidges =
-    mmRidge + wmRidge + bmRidge + gmRidge + ironRidge
-    + weatherRidge + emynRidge + ephelRidge + eredRidge
-    + mordorPlateau + mountDoom + mindolluin;
+  // KEY FIX: ridges blend via Math.max (not sum) so they don't stack into walls.
+  // Each ridge is a smooth Gaussian contribution; the max picks the dominant one.
+  // A small fraction is then added to the noise base so ridges "grow from" terrain.
+  const ridgeMax = Math.max(
+    mmRidge, wmRidge, bmRidge, gmRidge, ironRidge,
+    weatherRidge, emynRidge, ephelRidge, eredRidge,
+    mountDoom, mindolluin
+  );
+  // Blend: base terrain + ridge influence (ridges lift terrain smoothly)
+  const terrainWithRidges = base + ridgeMax * 0.85 + mordorPlateau;
 
-  const raw = landMask * (base + eastRise + detail)
-    + structuralRidges
-    - shireDip - rohanDip - anduinDip - lorienDip;
+  // Valley suppressors keep plains flat by pulling down:
+  const plains = shireDip + rohanDip + anduinDip + lorienDip;
+
+  const raw = landMask * (terrainWithRidges + eastRise + detail) - plains * landMask;
 
   return clamp(raw);
 }
@@ -448,8 +455,9 @@ function TerrainMesh() {
       const nx = (x + 5) / 10;
       const ny = (z + 3.25) / 6.5;
       const h = middleEarthHeight(nx, ny);
-      // Scale: 1.15 gives realistic mountain slopes without walls
-      const elev = h < 0.055 ? 0 : h * 1.15;
+      // Continuous elevation — no hard step at waterline.
+      // Ocean (h=0) stays at 0; land rises smoothly.
+      const elev = h * 1.2;
       pos.setY(i, elev);
       const c = terrainColor(nx, ny, h);
       colorArr[i * 3]     = c.r;
@@ -511,7 +519,7 @@ function MapPin({ nx, ny, active, accent, onClick }: {
   const x = nx * 10 - 5;
   const z = ny * 6.5 - 3.25;
   const h = middleEarthHeight(nx, ny);
-  const y = (h < 0.055 ? 0 : h * 1.15) + 0.06;
+  const y = h * 1.2 + 0.06;
 
   const pinRef = useRef<THREE.Mesh>(null);
   useFrame(({ clock }) => {
@@ -551,19 +559,35 @@ function MapPin({ nx, ny, active, accent, onClick }: {
   );
 }
 
-// ─── Atmosphere / fog plane ────────────────────────────────────────────────────
-function AtmosphereFog() {
-  const fogRef = useRef<THREE.Mesh>(null);
+// ─── Ocean plane — fills below terrain level ─────────────────────────────────
+function OceanPlane() {
+  return (
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
+      <planeGeometry args={[60, 60]} />
+      <meshStandardMaterial
+        color="#0a1e3c"
+        roughness={0.05}
+        metalness={0.1}
+        transparent
+        opacity={0.92}
+      />
+    </mesh>
+  );
+}
+
+// ─── Haze / atmospheric fog layer ────────────────────────────────────────────
+function AtmosphericHaze() {
+  const ref = useRef<THREE.Mesh>(null);
   useFrame(({ clock }) => {
-    if (fogRef.current) {
-      const mat = fogRef.current.material as THREE.MeshBasicMaterial;
-      mat.opacity = 0.08 + Math.sin(clock.getElapsedTime() * 0.25) * 0.02;
+    if (ref.current) {
+      (ref.current.material as THREE.MeshBasicMaterial).opacity =
+        0.055 + Math.sin(clock.getElapsedTime() * 0.18) * 0.015;
     }
   });
   return (
-    <mesh ref={fogRef} position={[0, 3.5, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-      <planeGeometry args={[20, 14]} />
-      <meshBasicMaterial color="#8090b0" transparent opacity={0.10} side={THREE.DoubleSide} />
+    <mesh ref={ref} position={[0, 1.8, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+      <planeGeometry args={[40, 30]} />
+      <meshBasicMaterial color="#b8cce0" transparent opacity={0.06} depthWrite={false} />
     </mesh>
   );
 }
@@ -603,19 +627,22 @@ export default function MiddleEarthTerrain({
     <Canvas
       shadows
       gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
-      style={{ background: '#060d16' }}
-      camera={{ fov: 42, near: 0.1, far: 80 }}
+      style={{ background: '#1a3a5c' }}
+      camera={{ fov: 48, near: 0.1, far: 200 }}
+      onCreated={({ scene }) => {
+        scene.fog = new THREE.FogExp2('#c8ddf0', 0.018);
+      }}
     >
       <CameraRig />
 
       {/* ── Lighting ── */}
       {/* Ambient — cool sky fill */}
-      <ambientLight color="#c8d8f0" intensity={0.55} />
-      {/* Sun — NW angle, warm gold */}
+      <ambientLight color="#d0e4f8" intensity={0.70} />
+      {/* Sun — matches Sky sunPosition, warm afternoon gold */}
       <directionalLight
-        position={[-4, 9, -3]}
-        color="#ffe8c0"
-        intensity={2.1}
+        position={[-4, 8, -5]}
+        color="#ffd090"
+        intensity={2.4}
         castShadow
         shadow-mapSize-width={2048}
         shadow-mapSize-height={2048}
@@ -630,14 +657,24 @@ export default function MiddleEarthTerrain({
       {/* Mordor underlight — very subtle orange bleed, centered on Mordor nx≈0.655,ny≈0.620 */}
       <pointLight position={[1.55, 0.3, 0.53]} color="#ff5500" intensity={1.2} distance={3.0} decay={2} />
 
-      {/* ── Stars (visible at map edges) ── */}
-      <Stars radius={30} depth={8} count={800} factor={2} saturation={0.4} fade />
+      {/* ── Cinematic sky — replaces black space background ── */}
+      <Sky
+        distance={45000}
+        sunPosition={[-0.4, 0.18, -0.5]}
+        inclination={0.52}
+        azimuth={0.22}
+        turbidity={8}
+        rayleigh={1.8}
+        mieCoefficient={0.006}
+        mieDirectionalG={0.82}
+      />
 
       {/* ── Terrain ── */}
       <TerrainMesh />
 
-      {/* ── Atmosphere ── */}
-      <AtmosphereFog />
+      {/* ── Ocean + atmospheric haze ── */}
+      <OceanPlane />
+      <AtmosphericHaze />
 
       {/* ── Location pins ── */}
       {locations.map(loc => (
@@ -656,10 +693,10 @@ export default function MiddleEarthTerrain({
         enablePan
         enableRotate
         enableZoom
-        minDistance={2.5}
-        maxDistance={14}
-        maxPolarAngle={Math.PI / 2.2}
-        minPolarAngle={0.18}
+        minDistance={2.0}
+        maxDistance={18}
+        maxPolarAngle={Math.PI / 2.05}
+        minPolarAngle={0.08}
         panSpeed={1.2}
         rotateSpeed={0.55}
         zoomSpeed={0.9}
