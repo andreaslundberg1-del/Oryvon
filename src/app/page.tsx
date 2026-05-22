@@ -1781,7 +1781,43 @@ export default function Home() {
         return category === selected || category.includes(selected) || selected.includes(category);
       })
     : liveUniverses;
-  const genreUniverses = liveGenreUniverses.length > 0 ? liveGenreUniverses : fallbackGenreUniverses;
+  const baseGenreUniverses = liveGenreUniverses.length > 0 ? liveGenreUniverses : fallbackGenreUniverses;
+
+  // Permanently pinned universes per genre — NEVER removed by CMS overwrites or category mismatches
+  const PINNED_MOVIES = [
+    {
+      id: "harrypotter",
+      category: "movies",
+      title: "Harry Potter",
+      releaseYears: "2001–2011",
+      rating: "9.2/10",
+      categoryTags: ["MAGIC", "ADVENTURE", "WIZARDS"],
+      image: "/Images/harrypotter_castle.png",
+      href: "/universe/harrypotter",
+      teaser: "Unlock the historical annals of Hogwarts and the magical artifacts of the Wizarding World.",
+      featured: true,
+    },
+    {
+      id: "lotr",
+      category: "movies",
+      title: "The Lord of the Rings",
+      releaseYears: "2001–Present",
+      rating: "9.5/10",
+      categoryTags: ["FANTASY", "LORE", "EPIC"],
+      image: "/Images/middle_earth_rivendell.png",
+      href: "/universe/lotr",
+      teaser: "Explore the vast chronology of Arda, from the creation of the Rings to the War of the Ring and beyond.",
+      featured: true,
+    },
+  ];
+
+  // Inject pinned movies when Movies portal is active, dedup by id
+  const genreUniverses = (() => {
+    if (selectedGenre !== "movies") return baseGenreUniverses;
+    const existingIds = new Set(baseGenreUniverses.map((u) => String(u.id).toLowerCase()));
+    const missing = PINNED_MOVIES.filter((p) => !existingIds.has(p.id));
+    return [...missing, ...baseGenreUniverses];
+  })();
 
   // Gather all unique tags inside the current genre dynamically
   const dynamicTags = Array.from(
@@ -1867,7 +1903,11 @@ export default function Home() {
     : filteredUniverses.filter((u) => parseFloat(u.rating.split("/")[0]) >= 9.0);
 
   const popularUniverses = selectedGenre
-    ? filteredUniverses.slice().reverse().slice(0, 8)
+    ? (() => {
+        const featured = filteredUniverses.filter((u) => u.featured);
+        const rest = filteredUniverses.filter((u) => !u.featured);
+        return [...featured, ...rest].slice(0, 8);
+      })()
     : filteredUniverses.slice(3, 9);
   
   const recentlyUpdatedUniverses = selectedGenre
