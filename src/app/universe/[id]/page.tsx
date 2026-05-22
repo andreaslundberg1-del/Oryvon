@@ -1,9 +1,15 @@
 ﻿"use client";
 
 import React, { useState, useRef, useCallback } from 'react';
+import dynamic from 'next/dynamic';
 import { useParams, useRouter } from 'next/navigation';
 import { useAudio } from '@/components/AudioManager';
 import { getUniverseData } from '@/data/universeRegistry';
+
+const MiddleEarthTerrain = dynamic(
+  () => import('@/components/MiddleEarthTerrain'),
+  { ssr: false, loading: () => <div className="absolute inset-0 bg-[#060d16] flex items-center justify-center"><p className="font-mono text-[9px] tracking-[0.3em] uppercase text-white/20 animate-pulse">RENDERING TERRAIN…</p></div> }
+);
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 function hex2rgb(hex: string) {
@@ -193,18 +199,11 @@ const PLACE_LABELS = [
 
 function MapTab({ data, accent, rgb }: { data: any; accent: string; rgb: string }) {
   const [selected, setSelected] = useState(MAP_LOCATIONS[0]);
-  const [zoom, setZoom] = useState(1);
-  const [panX, setPanX] = useState(0);
-  const [panY, setPanY] = useState(0);
   const [view, setView] = useState('Political');
   const [viewOpen, setViewOpen] = useState(false);
   const [activeFilters, setActiveFilters] = useState<string[]>(['Cities','Strongholds','Landmarks','Regions']);
   const [showLocations, setShowLocations] = useState(true);
   const [panelOpen, setPanelOpen] = useState(true);
-  const [isDraggingState, setIsDraggingState] = useState(false);
-  const isDragging = useRef(false);
-  const dragStart = useRef({ x: 0, y: 0, px: 0, py: 0 });
-  const mapRef = useRef<HTMLDivElement>(null);
 
   const filterDefs = [
     { id: 'Cities',      icon: '●', types: ['City'] },
@@ -221,46 +220,62 @@ function MapTab({ data, accent, rgb }: { data: any; accent: string; rgb: string 
     return fd ? activeFilters.includes(fd.id) : true;
   });
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    isDragging.current = true;
-    setIsDraggingState(true);
-    dragStart.current = { x: e.clientX, y: e.clientY, px: panX, py: panY };
-  };
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging.current) return;
-    setPanX(dragStart.current.px + (e.clientX - dragStart.current.x));
-    setPanY(dragStart.current.py + (e.clientY - dragStart.current.y));
-  };
-  const handleMouseUp = () => { isDragging.current = false; setIsDraggingState(false); };
-
   const panelLoc = selected;
 
   return (
-    <div className="flex h-full overflow-hidden bg-[#0e0c09]">
+    <div className="flex h-full overflow-hidden bg-[#060d16]">
 
-      {/* ══ MAP CANVAS ══ */}
-      <div
-        ref={mapRef}
-        className="flex-1 relative overflow-hidden select-none"
-        style={{ cursor: isDraggingState ? 'grabbing' : 'grab' }}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-      >
-        {/* ── Base map image ── */}
-        <div
-          className="absolute inset-0"
-          style={{
-            transform: `scale(${zoom}) translate(${panX / zoom}px, ${panY / zoom}px)`,
-            transformOrigin: 'center center',
-            transition: isDraggingState ? 'none' : 'transform 0.25s ease',
-          }}
-        >
-          {/* ═══════════════════════════════════════════════════════════════
-               LAYERED SVG TERRAIN — 3D depth illusion via elevation bands
-               All coordinates are % of the 1400×900 SVG viewport
-          ═══════════════════════════════════════════════════════════════ */}
+      {/* ══ THREE.JS TERRAIN CANVAS ══ */}
+      <div className="flex-1 relative overflow-hidden">
+        {/* WebGL terrain */}
+        <div className="absolute inset-0">
+          <MiddleEarthTerrain
+            locations={showLocations ? visibleLocs.map(l => ({ id: l.id, name: l.name, x: l.x, y: l.y })) : []}
+            selectedId={selected.id}
+            accent={accent}
+            onSelectLocation={id => {
+              const loc = MAP_LOCATIONS.find(l => l.id === id);
+              if (loc) { setSelected(loc); setPanelOpen(true); }
+            }}
+          />
+        </div>
+
+        {/* Navigation hint overlay */}
+        <div className="absolute bottom-20 left-1/2 -translate-x-1/2 pointer-events-none z-10">
+          <p className="font-mono text-[7px] tracking-[0.3em] uppercase text-white/18">
+            DRAG TO ROTATE · SCROLL TO ZOOM · RIGHT-DRAG TO PAN
+          </p>
+        </div>
+
+        {/* Region labels — CSS overlay matching terrain regions */}
+        {REGION_LABELS.map(r => (
+          <div
+            key={r.name}
+            className="absolute pointer-events-none select-none z-10"
+            style={{ left: `${r.x}%`, top: `${r.y}%`, transform: 'translate(-50%,-50%)', textAlign: 'center' }}
+          >
+            <p
+              className="uppercase tracking-[0.22em] leading-none text-white/75"
+              style={{
+                fontFamily: "'Cinzel', Georgia, serif",
+                fontSize: r.size,
+                fontWeight: 600,
+                textShadow: '0 0 12px rgba(0,0,0,1), 0 1px 2px rgba(0,0,0,1), 0 0 40px rgba(0,0,0,0.8)',
+              }}
+            >
+              {r.name}
+            </p>
+            {r.sub && (
+              <p className="text-white/38 tracking-[0.12em] mt-0.5"
+                style={{ fontFamily: 'Georgia, serif', fontSize: r.size * 0.62, fontStyle: 'italic', textShadow: '0 1px 4px rgba(0,0,0,1)' }}>
+                {r.sub}
+              </p>
+            )}
+          </div>
+        ))}
+
+        {/* ── old SVG/markers removed — terrain is now WebGL ── */}
+        <div className="hidden">
           <svg
             viewBox="0 0 1400 900"
             preserveAspectRatio="xMidYMid slice"
@@ -842,17 +857,14 @@ function MapTab({ data, accent, rgb }: { data: any; accent: string; rgb: string 
               <text x="11" y="5.5" textAnchor="middle" fill={accent} fontSize="3" fontFamily="monospace" opacity="0.9">N</text>
             </svg>
           </div>
-          {/* Zoom in */}
-          {[
-            { lbl: '+', fn: () => setZoom(z => Math.min(z + 0.2, 3)) },
-            { lbl: '−', fn: () => setZoom(z => Math.max(z - 0.2, 0.6)) },
-            { lbl: '⊙', fn: () => { setZoom(1); setPanX(0); setPanY(0); } },
-          ].map(b => (
-            <button key={b.lbl} onClick={b.fn}
-              className="w-8 h-8 flex items-center justify-center font-mono text-sm rounded-sm transition-all hover:scale-110"
-              style={{ background: 'rgba(10,8,5,0.88)', border: `1px solid rgba(${rgb},0.28)`, color: accent }}>
-              {b.lbl}
-            </button>
+          {/* Zoom hint buttons — actual zoom handled by scroll on the WebGL canvas */}
+          {['+', '−', '⊙'].map(lbl => (
+            <div key={lbl}
+              className="w-8 h-8 flex items-center justify-center font-mono text-sm rounded-sm opacity-60 select-none"
+              style={{ background: 'rgba(10,8,5,0.88)', border: `1px solid rgba(${rgb},0.28)`, color: accent }}
+              title="Scroll to zoom · Drag to rotate · Right-drag to pan">
+              {lbl}
+            </div>
           ))}
         </div>
 
