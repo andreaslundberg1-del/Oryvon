@@ -56,8 +56,8 @@ const GENRES: GenreDef[] = [
     label: "MOVIES",
     system: "//001 CINEMA CORE//",
     sub: "Stories through the lens & blockbusters",
-    color: "#c59635",
-    glow: "rgba(197, 150, 53, 0.65)",
+    color: "#c9933a",
+    glow: "rgba(201, 147, 58, 0.70)",
     canvasTheme: "cinema",
     count: "1,248 REALMS",
     bgImage: "/Images/harrypotter_castle.png",
@@ -76,8 +76,8 @@ const GENRES: GenreDef[] = [
     label: "SERIES",
     system: "//002 CHRONICLE CORE//",
     sub: "Binge-worthy sagas & TV chronicles",
-    color: "#7c51a0",
-    glow: "rgba(124, 81, 160, 0.65)",
+    color: "#8b5cf6",
+    glow: "rgba(139, 92, 246, 0.70)",
     canvasTheme: "cinema",
     count: "832 REALMS",
     bgImage: "/Images/got_throne.png",
@@ -97,8 +97,8 @@ const GENRES: GenreDef[] = [
     label: "GAMES",
     system: "//003 VIRTUAL CORE//",
     sub: "Immersive worlds & interactive epics",
-    color: "#3a65b0",
-    glow: "rgba(58, 101, 176, 0.65)",
+    color: "#3b82f6",
+    glow: "rgba(59, 130, 246, 0.70)",
     canvasTheme: "gaming",
     count: "1,572 REALMS",
     bgImage: "/Images/elden_ring_tree.png",
@@ -116,8 +116,8 @@ const GENRES: GenreDef[] = [
     label: "SPORTS",
     system: "//004 ARENA CORE//",
     sub: "Legends of the arena & historical eras",
-    color: "#2a7556",
-    glow: "rgba(42, 117, 86, 0.65)",
+    color: "#22c55e",
+    glow: "rgba(34, 197, 94, 0.70)",
     canvasTheme: "sport",
     count: "620 REALMS",
     bgImage: "/Images/portal_sport.png",
@@ -136,8 +136,8 @@ const GENRES: GenreDef[] = [
     label: "ANIME",
     system: "//005 SHONEN CORE//",
     sub: "Animated masterpieces & grand realms",
-    color: "#a63e62",
-    glow: "rgba(166, 62, 98, 0.65)",
+    color: "#dc2626",
+    glow: "rgba(220, 38, 38, 0.70)",
     canvasTheme: "gaming",
     count: "540 REALMS",
     bgImage: "/Images/witcher_forest.png",
@@ -155,8 +155,8 @@ const GENRES: GenreDef[] = [
     label: "HISTORY",
     system: "//006 ANNAL CORE//",
     sub: "Realms of the past & ancient empires",
-    color: "#b47833",
-    glow: "rgba(180, 120, 51, 0.65)",
+    color: "#d97706",
+    glow: "rgba(217, 119, 6, 0.70)",
     canvasTheme: "cinema",
     count: "1,120 REALMS",
     bgImage: "/Images/assassins_creed_dome.png",
@@ -173,8 +173,8 @@ const GENRES: GenreDef[] = [
     label: "MYTHOLOGY",
     system: "//007 COSMOS CORE//",
     sub: "Pantheons of gods & legendary beasts",
-    color: "#2d787a",
-    glow: "rgba(45, 120, 122, 0.65)",
+    color: "#06b6d4",
+    glow: "rgba(6, 182, 212, 0.70)",
     canvasTheme: "sport",
     count: "980 REALMS",
     bgImage: "/Images/god_of_war_axe.png",
@@ -2577,111 +2577,89 @@ export default function Home() {
             /* ── UNIFIED CINEMATIC HERO & EXPLORE GATEWAY (Single-Screen) ── */
             <div className="flex flex-col items-center justify-between w-full relative z-20 overflow-x-hidden" style={{ minHeight: '100dvh', padding: 'clamp(0.75rem, 2vw, 2rem) clamp(1rem, 3vw, 2rem)' }}>
               
-              {/* Layered Space/Fantasy Backdrop & Particles Behind Portals */}
-              <div className="absolute inset-0 z-0 pointer-events-none select-none overflow-hidden bg-black">
-                {/* Deep Cosmic space dark base */}
-                <div 
-                  className="absolute inset-0 opacity-100"
-                  style={{
-                    background: "radial-gradient(circle at 50% 50%, #0c0907 0%, #040302 65%, #000000 100%)",
-                  }}
-                />
+              {/* ── CINEMATIC DARK FANTASY SKY BACKGROUND ── */}
+              <div className="absolute inset-0 z-0 pointer-events-none select-none overflow-hidden" style={{ background: '#050302' }}>
 
-                {/* Left golden/bronze nebula cloud */}
-                <div 
-                  className="absolute top-[-10%] -left-[15%] w-[80vw] h-[100vh] rounded-full filter blur-[120px] opacity-50 mix-blend-screen"
-                  style={{
-                    background: "radial-gradient(circle at center, rgba(168, 118, 42, 0.55) 0%, rgba(80, 50, 10, 0.28) 50%, transparent 80%)",
-                    animation: "nebula-drift-left 32s ease-in-out infinite alternate",
-                  }}
-                />
-                
-                {/* Right golden/bronze nebula cloud */}
-                <div 
-                  className="absolute top-[10%] -right-[15%] w-[80vw] h-[100vh] rounded-full filter blur-[120px] opacity-45 mix-blend-screen"
-                  style={{
-                    background: "radial-gradient(circle at center, rgba(238, 208, 120, 0.50) 0%, rgba(138, 88, 12, 0.22) 50%, transparent 80%)",
-                    animation: "nebula-drift-right 36s ease-in-out infinite alternate",
-                  }}
-                />
+                {/* Base deep dark sky */}
+                <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at 50% 0%, #1a0e05 0%, #0a0603 40%, #020100 100%)' }} />
 
-                {/* Additional Layered Golden Core Nebula Behind Logo */}
-                <div 
-                  className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[100vw] h-[80vh] rounded-full filter blur-[100px] opacity-90 mix-blend-screen"
-                  style={{
-                    background: "radial-gradient(circle, rgba(255, 223, 130, 0.42) 0%, rgba(201, 147, 58, 0.22) 45%, rgba(138, 88, 12, 0.08) 70%, transparent 100%)",
-                  }}
-                />
+                {/* Large dramatic storm clouds - left */}
+                <div className="absolute" style={{
+                  top: '-5%', left: '-20%', width: '70vw', height: '75vh',
+                  background: 'radial-gradient(ellipse at center, #1c1208 0%, #0d0804 45%, transparent 75%)',
+                  filter: 'blur(80px)', opacity: 0.95,
+                  animation: 'nebula-drift-left 55s ease-in-out infinite alternate',
+                }} />
 
-                {/* Soft Indigo/Purple backdrop hue for chromatic depth around the edges */}
-                <div 
-                  className="absolute inset-0 opacity-40 mix-blend-color-dodge"
-                  style={{
-                    background: `
-                      radial-gradient(circle at 10% 80%, rgba(139, 92, 246, 0.08) 0%, transparent 50%),
-                      radial-gradient(circle at 90% 20%, rgba(139, 92, 246, 0.05) 0%, transparent 50%)
-                    `,
-                    filter: "blur(60px)",
-                  }}
-                />
+                {/* Large dramatic storm clouds - right */}
+                <div className="absolute" style={{
+                  top: '-5%', right: '-20%', width: '70vw', height: '75vh',
+                  background: 'radial-gradient(ellipse at center, #1a1107 0%, #0c0703 45%, transparent 75%)',
+                  filter: 'blur(80px)', opacity: 0.92,
+                  animation: 'nebula-drift-right 60s ease-in-out infinite alternate',
+                }} />
 
-                {/* Dark Volumetric Space Dust/Clouds Layer 1 (Smoky atmosphere) */}
-                <div 
-                  className="absolute top-[5%] left-[5%] w-[65vw] h-[60vh] rounded-full filter blur-[130px] opacity-[0.88] mix-blend-multiply pointer-events-none"
-                  style={{
-                    background: "radial-gradient(circle, #18110b 0%, #070504 60%, transparent 95%)",
-                    animation: "nebula-drift-left 45s ease-in-out infinite alternate",
-                  }}
-                />
+                {/* Central top golden atmospheric glow - the "light source" above logo */}
+                <div className="absolute" style={{
+                  top: '-10%', left: '50%', transform: 'translateX(-50%)',
+                  width: '90vw', height: '70vh',
+                  background: 'radial-gradient(ellipse at 50% 30%, rgba(201,147,58,0.28) 0%, rgba(139,88,20,0.14) 35%, rgba(80,45,8,0.06) 60%, transparent 80%)',
+                  filter: 'blur(60px)', opacity: 1,
+                }} />
 
-                {/* Dark Volumetric Space Dust/Clouds Layer 2 */}
-                <div 
-                  className="absolute top-[20%] right-[5%] w-[60vw] h-[60vh] rounded-full filter blur-[120px] opacity-[0.82] mix-blend-multiply pointer-events-none"
-                  style={{
-                    background: "radial-gradient(circle, #140f09 0%, #050403 65%, transparent 95%)",
-                    animation: "nebula-drift-right 52s ease-in-out infinite alternate-reverse",
-                  }}
-                />
+                {/* Golden light beam directly behind symbol - key cinematic effect */}
+                <div className="absolute" style={{
+                  top: 0, left: '50%', transform: 'translateX(-50%)',
+                  width: '40vw', height: '55vh',
+                  background: 'radial-gradient(ellipse at 50% 0%, rgba(238,208,120,0.22) 0%, rgba(201,147,58,0.10) 40%, transparent 70%)',
+                  filter: 'blur(40px)', opacity: 1,
+                  clipPath: 'polygon(35% 0%, 65% 0%, 80% 100%, 20% 100%)',
+                }} />
 
-                {/* Dark Volumetric Space Dust/Clouds Layer 3 - Centered */}
-                <div 
-                  className="absolute top-[35%] left-[25%] w-[65vw] h-[45vh] rounded-full filter blur-[130px] opacity-[0.85] mix-blend-multiply pointer-events-none"
-                  style={{
-                    background: "radial-gradient(circle, #120d08 0%, #040302 60%, transparent 95%)",
-                    animation: "nebula-drift-left 48s ease-in-out infinite alternate-reverse",
-                  }}
-                />
+                {/* Mid-level dark smoke clouds */}
+                <div className="absolute" style={{
+                  top: '15%', left: '5%', width: '55vw', height: '50vh',
+                  background: 'radial-gradient(circle, #160f07 0%, #060402 55%, transparent 85%)',
+                  filter: 'blur(100px)', opacity: 0.90,
+                  animation: 'nebula-drift-left 70s ease-in-out infinite alternate-reverse',
+                }} />
+                <div className="absolute" style={{
+                  top: '20%', right: '5%', width: '50vw', height: '45vh',
+                  background: 'radial-gradient(circle, #130d06 0%, #050302 55%, transparent 85%)',
+                  filter: 'blur(90px)', opacity: 0.88,
+                  animation: 'nebula-drift-right 65s ease-in-out infinite alternate-reverse',
+                }} />
 
-                {/* Dense Golden Dust Lane behind Explore Realms and Portals */}
-                <div 
-                  className="absolute bottom-[5%] left-1/2 -translate-x-1/2 w-[98vw] h-[40vh] rounded-full filter blur-[100px] opacity-65 mix-blend-screen"
-                  style={{
-                    background: "radial-gradient(ellipse at center, rgba(238, 208, 120, 0.15) 0%, rgba(201, 147, 58, 0.05) 50%, transparent 80%)",
-                  }}
-                />
+                {/* Bottom atmospheric glow where portals sit */}
+                <div className="absolute" style={{
+                  bottom: '0%', left: '50%', transform: 'translateX(-50%)',
+                  width: '100vw', height: '45vh',
+                  background: 'radial-gradient(ellipse at center, rgba(201,147,58,0.12) 0%, rgba(100,60,10,0.06) 45%, transparent 70%)',
+                  filter: 'blur(50px)', opacity: 1,
+                }} />
 
-                {/* Heavy Film Vignette overlay for rich contrast and edge depth */}
-                <div 
-                  className="absolute inset-0 z-10 pointer-events-none select-none"
-                  style={{
-                    background: "radial-gradient(ellipse at 50% 40%, transparent 20%, rgba(0, 0, 0, 0.65) 55%, rgba(0, 0, 0, 0.98) 100%)",
-                  }}
-                />
+                {/* Edge vignette for cinematic framing */}
+                <div className="absolute inset-0" style={{
+                  background: 'radial-gradient(ellipse at 50% 35%, transparent 25%, rgba(0,0,0,0.5) 55%, rgba(0,0,0,0.95) 100%)',
+                  zIndex: 5,
+                }} />
 
-                {/* Subtle dynamic noise overlay for high-end film grain texture */}
-                <div className="absolute inset-0 opacity-20 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiPjxmaWx0ZXIgaWQ9Im4iPjxmZVR1cmJ1bGVuY2UgdHlwZT0iZnJhY3RhbE5vaXNlIiBiYXNlRnJlcXVlbmN5PSIuOCIgbnVtT2N0YXZlcz0iMSIgc3RpdGNoVGlsZXM9InN0aXRjaCIvPjwvZmlsdGVyPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbHRlcj0idXJsKCNuKSIgb3BhY2l0eT0iLjA1Ii8+PC9zdmc+')] mix-blend-overlay z-20" />
-                
-                {/* Dynamic floating gold stardust particles */}
+                {/* Film grain */}
+                <div className="absolute inset-0 opacity-[0.035] mix-blend-overlay" style={{ zIndex: 6,
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E")`,
+                }} />
+
+                {/* Floating gold stardust particles */}
                 {stardust.map((particle) => (
-                  <div key={particle.id} style={particle.style} />
+                  <div key={particle.id} style={{ ...particle.style, zIndex: 4 }} />
                 ))}
               </div>
 
               {/* Thin Vertical Golden Needle Ray */}
-              <div
-                className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-[1px] bg-gradient-to-b from-transparent via-[#c9933a]/20 to-transparent pointer-events-none z-10"
-                style={{ height: "100%" }}
-              />
+              <div className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-px pointer-events-none" style={{
+                background: 'linear-gradient(180deg, transparent 0%, rgba(201,147,58,0.35) 30%, rgba(238,208,120,0.15) 60%, transparent 100%)',
+                zIndex: 10,
+              }} />
 
               {/* ── 1. Top Cinematic Hero Area ── */}
               <div className="flex flex-col items-center relative z-20 w-full" style={{ paddingTop: 'clamp(0.5rem, 2vw, 2rem)' }}>
@@ -2727,11 +2705,11 @@ export default function Home() {
                     letterSpacing: '0.5em',
                     marginRight: '-0.5em',
                     fontFamily: "'Cinzel', 'Times New Roman', serif",
-                    background: 'linear-gradient(135deg, #ffffff 0%, #ffe9a3 40%, #c9933a 75%, #ffffff 100%)',
+                    background: 'linear-gradient(180deg, #ffffff 0%, #ffe9a3 30%, #f0c96a 55%, #c9933a 80%, #a67020 100%)',
                     WebkitBackgroundClip: 'text',
                     WebkitTextFillColor: 'transparent',
                     backgroundClip: 'text',
-                    filter: 'drop-shadow(0 4px 15px rgba(0,0,0,0.6))',
+                    filter: 'drop-shadow(0 0 60px rgba(201,147,58,0.6)) drop-shadow(0 0 30px rgba(238,208,120,0.4)) drop-shadow(0 4px 20px rgba(0,0,0,0.8))',
                   }}
                 >
                   {homepageSettings.hero_text || "ORYVON"}
@@ -2777,35 +2755,36 @@ export default function Home() {
               </div>
 
               {/* ── 2. Explore Realms Title ── */}
-              <div className="hero-sub pointer-events-none select-none flex flex-col items-center justify-center w-full relative z-20 px-4" style={{ gap: 'clamp(0.25rem, 0.5vw, 0.5rem)', margin: 'clamp(0.25rem, 1vw, 1rem) 0' }}>
-                <div className="flex items-center justify-center gap-4 w-full max-w-xl">
-                  <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent via-[#c9933a]/60 to-[#c9933a]/90" />
-                  <div className="w-2.5 h-2.5 rotate-45 border border-amber-500 bg-[#020101] shadow-[0_0_15px_rgba(245,158,11,0.9)] flex items-center justify-center">
-                    <div className="w-0.5 h-0.5 bg-white rounded-full shadow-[0_0_5px_#fff]" />
+              <div className="hero-sub pointer-events-none select-none flex flex-col items-center justify-center w-full relative z-20" style={{ gap: 'clamp(0.35rem, 0.6vw, 0.65rem)', margin: 'clamp(0.25rem, 1vw, 1rem) 0' }}>
+                {/* Wide golden separator line matching reference */}
+                <div className="flex items-center justify-center gap-5 w-full" style={{ maxWidth: '55vw' }}>
+                  <div className="flex-1 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(201,147,58,0.8) 60%, rgba(238,208,120,0.95))' }} />
+                  <div className="w-2 h-2 rotate-45 border border-amber-400 bg-[#050302] flex items-center justify-center" style={{ boxShadow: '0 0 12px rgba(238,208,120,0.8), 0 0 24px rgba(201,147,58,0.4)' }}>
+                    <div className="w-0.5 h-0.5 bg-white rounded-full" style={{ boxShadow: '0 0 4px #fff' }} />
                   </div>
-                  <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent via-[#c9933a]/60 to-[#c9933a]/90" />
+                  <div className="flex-1 h-px" style={{ background: 'linear-gradient(270deg, transparent, rgba(201,147,58,0.8) 60%, rgba(238,208,120,0.95))' }} />
                 </div>
-                
+
                 <h2
                   className="font-normal text-center block select-none"
                   style={{
-                    fontSize: 'clamp(0.875rem, 1.8vw, 1.5rem)',
-                    letterSpacing: '0.45em',
-                    marginRight: '-0.45em',
+                    fontSize: 'clamp(1rem, 2.2vw, 1.75rem)',
+                    letterSpacing: '0.5em',
+                    marginRight: '-0.5em',
                     fontFamily: "'Cinzel', 'Times New Roman', serif",
-                    background: 'linear-gradient(135deg, #ffffff 0%, #ffe9a3 40%, #c9933a 75%, #ffffff 100%)',
+                    background: 'linear-gradient(135deg, #e8d090 0%, #ffe9a3 35%, #ffffff 50%, #ffe9a3 65%, #c9933a 100%)',
                     WebkitBackgroundClip: 'text',
                     WebkitTextFillColor: 'transparent',
                     backgroundClip: 'text',
-                    filter: 'drop-shadow(0 2px 10px rgba(197,150,53,0.15))',
+                    filter: 'drop-shadow(0 0 20px rgba(201,147,58,0.4))',
                   }}
                 >
                   {t('home.tagline')}
                 </h2>
-                
+
                 <span
-                  className="font-mono text-[#eed078]/55 uppercase"
-                  style={{ fontSize: 'clamp(6.5px, 0.85vw, 8px)', letterSpacing: '0.48em', marginRight: '-0.48em' }}
+                  className="font-mono text-[#eed078]/60 uppercase"
+                  style={{ fontSize: 'clamp(7px, 0.9vw, 9px)', letterSpacing: '0.5em', marginRight: '-0.5em' }}
                 >
                   {homepageSettings.subtitle || t('home.chooseRealm')}
                 </span>
