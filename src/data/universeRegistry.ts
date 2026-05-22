@@ -579,7 +579,7 @@ export const UNIVERSE_REGISTRY: Record<string, any> = {
         tagline: 'All we have to decide is what to do with the time that is given to us.',
         description: 'The Lord of the Rings details the epic struggles across the ages of Middle-earth. From the creation of Arda to the forging of the Rings of Power and the final destruction of the One Ring in Mount Doom, the story chronicles the free peoples standing against Sauron.',
         backdrop: '/Images/middle_earth_rivendell.png',
-        accentColor: '#10b981',
+        accentColor: '#d4a030',
         universeType: 'HIGH FANTASY / EPIC',
         releaseYears: '2001–Present',
         categoryTags: [
