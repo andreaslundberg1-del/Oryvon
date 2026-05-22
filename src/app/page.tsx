@@ -1788,14 +1788,31 @@ export default function Home() {
     new Set(genreUniverses.flatMap((u) => u.categoryTags))
   );
 
+  // Search alias map — common alternate names map to universe ids
+  const SEARCH_ALIASES: Record<string, string[]> = {
+    harrypotter: ["hogwarts", "harry potter", "wizarding world", "hp", "potter", "dumbledore", "hermione", "voldemort"],
+    lotr: ["lord of the rings", "lotr", "middle-earth", "middle earth", "arda", "frodo", "gandalf", "mordor", "fellowship"],
+    thehobbit: ["hobbit", "bilbo", "smaug", "erebor", "thorin"],
+    starwars: ["star wars", "jedi", "sith", "force", "darth vader", "skywalker", "mandalorian"],
+    got: ["game of thrones", "westeros", "stark", "lannister", "targaryen"],
+    tes: ["elder scrolls", "skyrim", "oblivion", "morrowind", "dragonborn"],
+    eldenring: ["elden ring", "tarnished", "lands between"],
+    gow: ["god of war", "kratos", "norse"],
+    ac: ["assassins creed", "assassin", "templar", "ezio", "altair"],
+  };
+
   // Apply search query and tag filter
   const filteredUniverses = genreUniverses.filter((uni) => {
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return selectedTag ? uni.categoryTags.includes(selectedTag) : true;
+
+    const aliases = SEARCH_ALIASES[uni.id] || [];
+    const matchesAlias = aliases.some((alias) => alias.includes(q) || q.includes(alias));
     const matchesSearch =
-      uni.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      uni.teaser.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      uni.categoryTags.some((tag: string) =>
-        tag.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+      matchesAlias ||
+      uni.title.toLowerCase().includes(q) ||
+      uni.teaser.toLowerCase().includes(q) ||
+      uni.categoryTags.some((tag: string) => tag.toLowerCase().includes(q));
     const matchesTag = selectedTag ? uni.categoryTags.includes(selectedTag) : true;
     return matchesSearch && matchesTag;
   });
@@ -1836,6 +1853,9 @@ export default function Home() {
       }, 6500);
     }
   };
+
+  // Always-visible featured universes for the top row — never hidden by search or tag filters
+  const featuredGenreUniverses = genreUniverses.filter((u) => u.featured);
 
   // Group cards into cinematic sections
   const trendingUniverses = selectedGenre
@@ -2247,11 +2267,33 @@ export default function Home() {
                     gap: 'clamp(1.5rem, 3vw, 3rem)',
                   }}
                 >
+                  {/* ── PINNED: Featured universes — always visible, never hidden by search/tag ── */}
+                  {featuredGenreUniverses.length > 0 && (
+                    <div className="flex flex-col gap-3">
+                      <div className="flex justify-between items-end border-b pb-2" style={{ borderColor: `${activeGenreInfo.color}30` }}>
+                        <h3 className="text-sm font-normal tracking-[0.3em] text-white uppercase flex items-center gap-2" style={{ fontFamily: "'Cinzel', serif" }}>
+                          <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: activeGenreInfo.color }} />
+                          Featured {activeGenreInfo.label} Universes
+                        </h3>
+                        <span className="font-mono text-[7px] tracking-[0.2em] uppercase" style={{ color: activeGenreInfo.color }}>
+                          ★ Top Picks
+                        </span>
+                      </div>
+                      <NetflixScrollRow>
+                        {featuredGenreUniverses.map((uni) => (
+                          <div key={uni.id} className="snap-start shrink-0 w-[240px] md:w-[320px] lg:w-[300px]">
+                            <UniverseCard uni={uni} genreColor={activeGenreInfo.color} onEnter={playEraTransition} onCardHover={setHoveredCardId} hoveredCardId={hoveredCardId} startTransition={startTransition} />
+                          </div>
+                        ))}
+                      </NetflixScrollRow>
+                    </div>
+                  )}
+
                   {filteredUniverses.length === 0 ? (
-                    <div className="w-full text-center py-20 flex flex-col items-center gap-4">
+                    <div className="w-full text-center py-12 flex flex-col items-center gap-4">
                       <Compass size={60} color={activeGenreInfo.color} pulse />
                       <span className="font-mono text-[10px] text-white/30 tracking-[0.4em] uppercase">
-                        {t('home.noRealms')}
+                        No realms match your search — try clearing the filter
                       </span>
                     </div>
                   ) : filteredUniverses.length <= 4 ? (
