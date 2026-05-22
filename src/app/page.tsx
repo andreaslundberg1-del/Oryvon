@@ -1945,44 +1945,48 @@ export default function Home() {
             >
               {/* Top Navigation Bar */}
               <div 
-                className="flex flex-col md:flex-row justify-between items-center gap-4 border-b border-white/10"
+                className="flex flex-row justify-between items-center w-full"
                 style={{
                   maxWidth: 'clamp(1400px, 90vw, 1920px)',
-                  width: '100%',
-                  paddingBottom: 'clamp(1rem, 1.5vw, 1.5rem)',
+                  paddingBottom: 'clamp(0.75rem, 1.5vw, 1.25rem)',
                   paddingLeft: 'clamp(1rem, 2vw, 2.5rem)',
                   paddingRight: 'clamp(1rem, 2vw, 2.5rem)',
+                  borderBottom: `1px solid ${activeGenreInfo.color}30`,
                 }}
               >
-                <div className="flex flex-col items-center md:items-start gap-1">
-                  <span
-                    className="font-mono text-[7px] md:text-[8px] tracking-[0.4em] uppercase"
-                    style={{ color: activeGenreInfo.color }}
-                  >
-                    {t('common.systemActive')} // {activeGenreInfo.system}
-                  </span>
+                {/* Left: breadcrumb + realm title */}
+                <div className="flex flex-col items-start gap-0.5">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleGenreClick(null)}
+                      className="font-mono text-[7px] tracking-[0.3em] uppercase text-white/35 hover:text-amber-400 transition-colors cursor-none"
+                      onMouseEnter={playHover}
+                    >
+                      ← ARCHIVE
+                    </button>
+                    <span className="font-mono text-[7px] text-white/15">/</span>
+                    <span className="font-mono text-[7px] tracking-[0.3em] uppercase" style={{ color: activeGenreInfo.color }}>
+                      {activeGenreInfo.label}
+                    </span>
+                  </div>
                   <h2
-                    className="font-normal tracking-[0.2em] text-white uppercase"
-                    style={{
-                      fontFamily: "'Cinzel', serif",
-                      fontSize: 'clamp(1.25rem, 2vw, 2rem)',
-                    }}
+                    className="font-normal tracking-[0.25em] text-white uppercase"
+                    style={{ fontFamily: "'Cinzel', serif", fontSize: 'clamp(1.1rem, 2vw, 1.75rem)' }}
                   >
-                    {activeGenreInfo.label} {t('uni.realms').toUpperCase()}
+                    {activeGenreInfo.label} <span style={{ color: activeGenreInfo.color, opacity: 0.8 }}>REALMS</span>
                   </h2>
                 </div>
 
-                <div className="flex items-center gap-4 md:gap-6">
-                  <OryndorLogo size={160} variant="horizontal" />
+                {/* Right: logo + leave button */}
+                <div className="flex items-center gap-3 md:gap-5">
+                  <OryndorLogo size={140} variant="horizontal" />
                   <button
                     onClick={() => handleGenreClick(null)}
-                    className="px-5 py-2.5 md:px-6 md:py-3 rounded-full border font-mono uppercase text-white/50 hover:text-white transition-all duration-300 bg-white/5 cursor-none flex items-center gap-2 text-[9px] md:text-[10px] tracking-[0.3em]"
-                    style={{
-                      borderColor: "rgba(255,255,255,0.1)",
-                    }}
+                    className="hidden md:flex items-center gap-2 px-4 py-2 rounded-lg border font-mono text-[8px] tracking-[0.25em] text-white/50 hover:text-white hover:border-white/25 transition-all duration-300 bg-white/5 cursor-none uppercase"
+                    style={{ borderColor: 'rgba(255,255,255,0.1)' }}
                     onMouseEnter={playHover}
                   >
-                    ← {t('home.leavePortal')}
+                    ← Leave Portal
                   </button>
                 </div>
               </div>
@@ -2127,19 +2131,21 @@ export default function Home() {
                 </div>
               )}
 
-              {/* Filter & Search Console */}
+              {/* Filter & Search Console — compact sticky Netflix bar */}
               <div 
-                className="flex flex-col lg:flex-row gap-4 justify-between items-center rounded-xl backdrop-blur-md"
+                className="flex flex-col sm:flex-row gap-3 justify-between items-center"
                 style={{
                   maxWidth: 'clamp(1400px, 90vw, 1920px)',
                   width: '100%',
                   paddingLeft: 'clamp(1rem, 2vw, 2.5rem)',
                   paddingRight: 'clamp(1rem, 2vw, 2.5rem)',
-                  paddingTop: 'clamp(0.75rem, 1.25vw, 1.25rem)',
-                  paddingBottom: 'clamp(0.75rem, 1.25vw, 1.25rem)',
-                  marginBottom: 'clamp(0.75rem, 1.25vw, 1.25rem)',
-                  backgroundColor: 'rgba(255,255,255,0.02)',
-                  border: '1px solid rgba(255,255,255,0.05)',
+                  paddingTop: '0.6rem',
+                  paddingBottom: '0.6rem',
+                  marginBottom: '0.5rem',
+                  background: 'rgba(5,3,2,0.75)',
+                  backdropFilter: 'blur(12px)',
+                  borderRadius: '0.625rem',
+                  border: `1px solid ${activeGenreInfo.color}20`,
                 }}
               >
                 {/* Search Bar */}
@@ -2166,8 +2172,8 @@ export default function Home() {
                   </svg>
                 </div>
 
-                {/* Dynamic Sub-genre Filters */}
-                <div className="flex flex-wrap items-center gap-2 md:gap-2.5 justify-center">
+                {/* Dynamic Sub-genre Filters - horizontal scroll on mobile */}
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5" style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}>
                   <button
                     onClick={() => {
                       playHover();
@@ -2187,7 +2193,7 @@ export default function Home() {
                         : undefined,
                     }}
                   >
-                    {t('home.allRealms')}
+                    All Realms
                   </button>
                   {dynamicTags.map((tag) => (
                     <button
@@ -2222,7 +2228,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* ── High-Density Netflix Scrolling Rows ── */}
+              {/* ── Netflix Scrolling Rows ── */}
               {filteredUniverses.length === 0 ? (
                 <div className="w-full text-center py-20 flex flex-col items-center gap-4">
                   <Compass size={60} color={activeGenreInfo.color} pulse />
@@ -2258,15 +2264,10 @@ export default function Home() {
                             className="text-sm font-normal tracking-[0.3em] text-white uppercase flex items-center gap-2"
                             style={{ fontFamily: "'Cinzel', serif" }}
                           >
-                            <span
-                              className="w-1.5 h-1.5 rounded-full"
-                              style={{ backgroundColor: activeGenreInfo.color }}
-                            />
-                            {t('home.featuredArchives')}
+                            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: activeGenreInfo.color }} />
+                            Featured Archives
                           </h3>
-                          <span className="font-mono text-[7px] text-[#eed078]/80 tracking-[0.2em] uppercase">
-                            {t('home.criticalCoordinates')}
-                          </span>
+                          <span className="font-mono text-[7px] text-[#eed078]/80 tracking-[0.2em] uppercase">Top Picks</span>
                         </div>
 
                         <div 
@@ -2303,14 +2304,11 @@ export default function Home() {
                             className="text-sm font-normal tracking-[0.3em] text-white uppercase flex items-center gap-2"
                             style={{ fontFamily: "'Cinzel', serif" }}
                           >
-                            <span
-                              className="w-1.5 h-1.5 rounded-full"
-                              style={{ backgroundColor: activeGenreInfo.color }}
-                            />
-                            {t('home.allRegisteredSectors')}
+                            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: activeGenreInfo.color }} />
+                            All Realms
                           </h3>
                           <span className="font-mono text-[7px] text-white/30 tracking-[0.2em] uppercase">
-                            {filteredUniverses.length} {t('home.realmsConnected')}
+                            {filteredUniverses.length} Realms
                           </span>
                         </div>
 
@@ -2344,15 +2342,10 @@ export default function Home() {
                               className="text-sm font-normal tracking-[0.3em] text-white uppercase flex items-center gap-2"
                               style={{ fontFamily: "'Cinzel', serif" }}
                             >
-                              <span
-                                className="w-1.5 h-1.5 rounded-full"
-                                style={{ backgroundColor: activeGenreInfo.color }}
-                              />
-                              {t('home.trendingRealms')}
+                              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: activeGenreInfo.color }} />
+                              Trending in {activeGenreInfo.label}
                             </h3>
-                            <span className="font-mono text-[7px] text-white/30 tracking-[0.2em] uppercase">
-                              {t('home.popularityWeighted')}
-                            </span>
+                            <span className="font-mono text-[7px] text-white/30 tracking-[0.2em] uppercase">Most Visited</span>
                           </div>
 
                           <NetflixScrollRow>
@@ -2383,15 +2376,10 @@ export default function Home() {
                               className="text-sm font-normal tracking-[0.3em] text-white uppercase flex items-center gap-2"
                               style={{ fontFamily: "'Cinzel', serif" }}
                             >
-                              <span
-                                className="w-1.5 h-1.5 rounded-full"
-                                style={{ backgroundColor: activeGenreInfo.color }}
-                              />
-                              {t('home.criticallyAcclaimed')}
+                              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: activeGenreInfo.color }} />
+                              Critically Acclaimed
                             </h3>
-                            <span className="font-mono text-[7px] text-amber-400 tracking-[0.2em] uppercase">
-                              ★ {t('home.activeRatings')} 8.8+
-                            </span>
+                            <span className="font-mono text-[7px] text-amber-400 tracking-[0.2em] uppercase">★ Rated 8.8+</span>
                           </div>
 
                           <NetflixScrollRow>
@@ -2422,15 +2410,10 @@ export default function Home() {
                               className="text-sm font-normal tracking-[0.3em] text-white uppercase flex items-center gap-2"
                               style={{ fontFamily: "'Cinzel', serif" }}
                             >
-                              <span
-                                className="w-1.5 h-1.5 rounded-full"
-                                style={{ backgroundColor: activeGenreInfo.color }}
-                              />
-                              {t('home.popularWorlds')}
+                              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: activeGenreInfo.color }} />
+                              Popular Worlds
                             </h3>
-                            <span className="font-mono text-[7px] text-white/30 tracking-[0.2em] uppercase">
-                              {t('home.highEngagement')}
-                            </span>
+                            <span className="font-mono text-[7px] text-white/30 tracking-[0.2em] uppercase">High Activity</span>
                           </div>
 
                           <NetflixScrollRow>
@@ -2461,15 +2444,10 @@ export default function Home() {
                               className="text-sm font-normal tracking-[0.3em] text-white uppercase flex items-center gap-2"
                               style={{ fontFamily: "'Cinzel', serif" }}
                             >
-                              <span
-                                className="w-1.5 h-1.5 rounded-full"
-                                style={{ backgroundColor: activeGenreInfo.color }}
-                              />
-                              {t('home.recentlyUpdated')}
+                              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: activeGenreInfo.color }} />
+                              Recently Updated
                             </h3>
-                            <span className="font-mono text-[7px] text-amber-400 tracking-[0.2em] uppercase">
-                              ACTIVE DATA FEEDS
-                            </span>
+                            <span className="font-mono text-[7px] text-amber-400 tracking-[0.2em] uppercase">New Entries</span>
                           </div>
 
                           <NetflixScrollRow>
@@ -2500,15 +2478,10 @@ export default function Home() {
                               className="text-sm font-normal tracking-[0.3em] text-white uppercase flex items-center gap-2"
                               style={{ fontFamily: "'Cinzel', serif" }}
                             >
-                              <span
-                                className="w-1.5 h-1.5 rounded-full"
-                                style={{ backgroundColor: activeGenreInfo.color }}
-                              />
-                              CONTINUE EXPLORING
+                              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: activeGenreInfo.color }} />
+                              Continue Exploring
                             </h3>
-                            <span className="font-mono text-[7px] text-white/30 tracking-[0.2em] uppercase">
-                              FOCUS REALM ANOMALIES
-                            </span>
+                            <span className="font-mono text-[7px] text-white/30 tracking-[0.2em] uppercase">Unfinished Realms</span>
                           </div>
 
                           <NetflixScrollRow>
@@ -2539,14 +2512,11 @@ export default function Home() {
                               className="text-sm font-normal tracking-[0.3em] text-white uppercase flex items-center gap-2"
                               style={{ fontFamily: "'Cinzel', serif" }}
                             >
-                              <span
-                                className="w-1.5 h-1.5 rounded-full"
-                                style={{ backgroundColor: activeGenreInfo.color }}
-                              />
-                              ALL REGISTERED SECTORS
+                              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: activeGenreInfo.color }} />
+                              All Realms
                             </h3>
                             <span className="font-mono text-[7px] text-white/30 tracking-[0.2em] uppercase">
-                              {filteredUniverses.length} REALMS LOADED
+                              {filteredUniverses.length} Realms Loaded
                             </span>
                           </div>
 
