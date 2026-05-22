@@ -1102,7 +1102,7 @@ export default function UniverseOverviewPage() {
         {activeTab === 'overview'   && <OverviewTab   data={data} accent={accent} rgb={rgb} onTab={switchTab} />}
         {activeTab === 'map'        && <MapTab        data={data} accent={accent} rgb={rgb} />}
         {activeTab === 'characters' && <CharactersTab data={data} accent={accent} rgb={rgb} />}
-        {activeTab === 'familytree' && <FamilyTreeTab data={data} accent={accent} rgb={rgb} />}
+        {activeTab === 'familytree' && <FamilyTreeTab data={data} accent={accent} />}
         {activeTab === 'timeline'   && <TimelineTab   data={data} accent={accent} rgb={rgb} />}
         {activeTab === 'factions'   && <FactionsTab   data={data} accent={accent} rgb={rgb} />}
         {activeTab === 'lore'       && <LoreTab       data={data} accent={accent} rgb={rgb} />}
