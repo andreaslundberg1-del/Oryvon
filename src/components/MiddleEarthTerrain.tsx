@@ -47,11 +47,40 @@ function fbm(x: number, y: number, octaves: number, seed: number): number {
   return v / max;
 }
 
-// ─── Domain-warped fBm — gives organic, eroded look ──────────────────────────
+// ─── Domain-warped fBm — organic shape distortion ───────────────────────────
 function warpedFbm(x: number, y: number, octaves: number, seed: number, warp = 0.4): number {
   const wx = fbm(x + 0.3, y + 0.1, 3, seed + 5000) * warp;
   const wy = fbm(x + 1.7, y + 2.3, 3, seed + 6000) * warp;
   return fbm(x + wx, y + wy, octaves, seed);
+}
+
+// ─── Ridge fBm — sharp knife-edge crests like real mountain ridges ─────────────
+// Each octave uses 1-|noise*2-1| which peaks sharply at 0.5 intervals.
+// Creates the jagged silhouette of a real mountain chain.
+function ridgeFbm(x: number, y: number, octaves: number, seed: number): number {
+  let v = 0, amp = 0.5, freq = 1, max = 0;
+  for (let i = 0; i < octaves; i++) {
+    const n = valueNoise(x * freq, y * freq, seed + i * 1337);
+    v   += amp * (1.0 - Math.abs(n * 2.0 - 1.0));  // ridge shape
+    max += amp;
+    amp *= 0.48;
+    freq *= 2.2;
+  }
+  return v / max;
+}
+
+// ─── Turbulent fBm — erosion / gully simulation ─────────────────────────────
+// Absolute value of noise — creates gully-like trenches and sharp erosion.
+function turbulentFbm(x: number, y: number, octaves: number, seed: number): number {
+  let v = 0, amp = 0.5, freq = 1, max = 0;
+  for (let i = 0; i < octaves; i++) {
+    const n = valueNoise(x * freq, y * freq, seed + i * 1337);
+    v   += amp * Math.abs(n * 2.0 - 1.0);  // turbulence
+    max += amp;
+    amp *= 0.5;
+    freq *= 2.1;
+  }
+  return v / max;
 }
 
 // ─── Gaussian ridge — smooth bell curve, NO hard walls ───────────────────────
@@ -87,39 +116,13 @@ function gaussPeak(nx: number, ny: number, px: number, py: number, sigma: number
 // MIDDLE-EARTH HEIGHTMAP
 // ═══════════════════════════════════════════════════════════════════════════════
 //
-// COORDINATE SYSTEM — matches MAP_LOCATIONS x/y percentages divided by 100:
-//   nx = 0 (west/Belegaer) → 1 (east/Rhûn)
-//   ny = 0 (north)         → 1 (south/Harad)
-//
-// SOURCE: lotrproject.com canonical map, cross-referenced with Tolkien atlas.
-// VERIFIED positions (from map):
-//   The Shire      (0.17, 0.52)  — NW, rolling hills
-//   Bree           (0.22, 0.46)  — crossroads town, Weather Hills east
-//   Rivendell      (0.31, 0.40)  — hidden valley, west foot of Misty Mtns
-//   Misty Mountains spine nx≈0.37, ny 0.17→0.70 (N-S chain)
-//   Fangorn Forest (0.37, 0.60)  — south end of Misty Mtns
-//   Lothlórien     (0.40, 0.51)  — east of MM at Moria latitude
-//   Rohan (Edoras) (0.33, 0.62)  — south of Fangorn, west of Anduin,
-//                                   north of White Mountains
-//   White Mountains arc: nx 0.25→0.56, ny ≈0.66
-//   Minas Tirith   (0.45, 0.65)  — north foot of White Mtns
-//   Mirkwood       (0.55, 0.33)  — long N-S dark forest east of MM
-//   Mordor basin   nx 0.59→0.75, ny 0.54→0.72
-//   Ephel Dúath    west wall of Mordor, N-S at nx≈0.58
-//   Ered Lithui    north wall of Mordor, E-W at ny≈0.54
-//   Mount Doom     (0.67, 0.63)
-//   Barad-dûr      (0.63, 0.57)
-//   Blue Mountains nx≈0.12–0.15, ny 0.22→0.42 (western coastal chain)
-//   Grey Mountains nx 0.43→0.68, ny≈0.16
-//   Bay of Belfalas: southern sea inlet ny≈0.82, nx 0.28→0.42
-//   Gulf of Lhûn:  western sea inlet ny≈0.28–0.34
-//
-// DESIGN PRINCIPLES:
-//   1. gaussRidge() — Gaussian (bell-curve) falloff, NO hard walls
-//   2. Ridges are low amplitude (max 0.42); base terrain carries the weight
-//   3. warpedFbm() adds organic erosion on top of structural ridges
-//   4. Final vertical scale is 1.15 (was 2.4) — realistic slope angles
-//   5. Plains are subtracted to stay flat (Rohan, Shire, Anduin vale)
+// TECHNIQUE: Structural Gaussian envelope × ridgeFbm detail
+//   • gaussRidge() defines WHERE mountains are (geography)
+//   • ridgeFbm() defines WHAT they look like (geology)
+//   • Envelope multiplies ridge noise — jagged peaks only ON the mountain chain,
+//     smooth terrain everywhere else
+//   • turbulentFbm() carves erosion gullies across slopes
+//   • All geography coordinates from lotrproject.com canonical Tolkien atlas
 // ═══════════════════════════════════════════════════════════════════════════════
 
 function middleEarthHeight(nx: number, ny: number): number {
@@ -160,10 +163,9 @@ function middleEarthHeight(nx: number, ny: number): number {
 
   const landMask = shore * gulfMask * bayMask;
 
-  // ── 2. BASE ELEVATION — domain-warped macro terrain ───────────────────────
-  // Low-frequency warped noise gives rolling hills everywhere.
-  // Amplitude kept low so ridges don't get buried or over-amplified.
-  const base = warpedFbm(nx * 2.8, ny * 2.8, 5, 11, 0.35) * 0.22 + 0.13;
+  // ── 2. BASE ELEVATION ────────────────────────────────────────────────────────────
+  // Low-freq warped base — gentle rolling hills across whole continent.
+  const base = warpedFbm(nx * 2.8, ny * 2.8, 5, 11, 0.35) * 0.18 + 0.10;
 
   // ── 3. MISTY MOUNTAINS ────────────────────────────────────────────────────
   // N-S spine, nx≈0.37, ny 0.17→0.70.
@@ -281,27 +283,54 @@ function middleEarthHeight(nx: number, ny: number): number {
   // Lothlórien — flat golden wood east of MM at Moria latitude
   const lorienDip = gaussPeak(nx, ny, 0.400, 0.510, 0.030, 0.07);
 
-  // ── 16. FINE EROSION DETAIL ───────────────────────────────────────────────
-  // High-freq warped noise for micro-terrain detail (cliffs, gullies)
-  const detail = warpedFbm(nx * 11, ny * 11, 3, 42, 0.25) * 0.045;
-
-  // ── COMPOSITE ─────────────────────────────────────────────────────────────
-  // KEY FIX: ridges blend via Math.max (not sum) so they don't stack into walls.
-  // Each ridge is a smooth Gaussian contribution; the max picks the dominant one.
-  // A small fraction is then added to the noise base so ridges "grow from" terrain.
+  // ── 16. RIDGE NOISE DETAIL — modulated by structural envelope ─────────────────
+  // This is the KEY to realistic mountains:
+  // ridgeFbm produces sharp jagged crests (like real peaks)
+  // but we MULTIPLY it by the Gaussian structural envelope,
+  // so sharp detail only exists where mountains structurally are.
+  // Plains stay smooth; mountains become rugged.
   const ridgeMax = Math.max(
     mmRidge, wmRidge, bmRidge, gmRidge, ironRidge,
-    weatherRidge, emynRidge, ephelRidge, eredRidge,
-    mountDoom, mindolluin
+    weatherRidge, emynRidge, ephelRidge, eredRidge
   );
-  // Blend: base terrain + ridge influence (ridges lift terrain smoothly)
-  const terrainWithRidges = base + ridgeMax * 0.85 + mordorPlateau;
 
-  // Valley suppressors keep plains flat by pulling down:
+  // High-detail ridge noise — large scale crest definition
+  const ridgeDetail = ridgeFbm(nx * 18, ny * 18, 5, 31);
+  // Medium erosion turbulence — gullies and cliff breaks
+  const erosion = turbulentFbm(nx * 26, ny * 26, 4, 57) * 0.55;
+  // Fine rocky breakup
+  const rocky = ridgeFbm(nx * 44, ny * 44, 3, 83) * 0.38;
+
+  // Mountain detail = ridge noise × envelope (jagged ONLY where mountains are)
+  const mtnDetail = ridgeMax * (ridgeDetail * 0.32 + erosion * 0.08 + rocky * 0.05);
+
+  // Mild global terrain variation — rolling everywhere
+  const globalDetail = warpedFbm(nx * 8, ny * 8, 4, 42, 0.3) * 0.04;
+
+  // Mordor-specific cracked volcanic surface
+  const inMordorZone = mordorPlateau > 0.02;
+  const mordorCrack = inMordorZone
+    ? turbulentFbm(nx * 35, ny * 35, 3, 199) * mordorPlateau * 0.18
+    : 0;
+
+  // ── COMPOSITE ─────────────────────────────────────────────────────────────
+  // Structure: mountains "grow from" base terrain as ridge-detailed peaks.
+  // Max-blend prevents stacking; ridge detail gives geological realism.
+  const structuralPeaks = Math.max(mmRidge, wmRidge, bmRidge, gmRidge, ironRidge,
+    weatherRidge, emynRidge, ephelRidge, eredRidge, mountDoom, mindolluin);
+
+  const terrainBody = base
+    + structuralPeaks * 0.78    // mountain structure
+    + mtnDetail                  // jagged ridge detail on mountain slopes
+    + mordorPlateau              // volcanic basin
+    + mordorCrack                // cracked volcanic surface
+    + eastRise
+    + globalDetail;
+
+  // Valley suppressors — smooth Gaussian wells pulling plains flat:
   const plains = shireDip + rohanDip + anduinDip + lorienDip;
 
-  const raw = landMask * (terrainWithRidges + eastRise + detail) - plains * landMask;
-
+  const raw = landMask * terrainBody - plains * landMask;
   return clamp(raw);
 }
 
@@ -314,129 +343,152 @@ function inGauss(nx: number, ny: number, cx: number, cy: number, rx: number, ry:
 }
 
 // ─── Terrain colour ───────────────────────────────────────────────────────────
+// Uses both h (elevation) and slope proxy (via high-freq noise) for
+// rock/cliff tinting — steep faces go bare grey rock, flats stay green.
 function terrainColor(nx: number, ny: number, h: number): THREE.Color {
   const col = new THREE.Color();
 
   // ── OCEAN ──
   if (h <= 0.0) { col.setRGB(0.02, 0.07, 0.17); return col; }
 
-  // ── SHALLOW WATER / SHORE GRADIENT ──
-  if (h < 0.06) {
-    const t = h / 0.06;
-    col.setRGB(lerp(0.03, 0.24, t), lerp(0.10, 0.21, t), lerp(0.23, 0.15, t));
+  // ── SHALLOW WATER / BEACH TRANSITION ──
+  if (h < 0.055) {
+    const t = h / 0.055;
+    col.setRGB(lerp(0.04, 0.26, t), lerp(0.12, 0.22, t), lerp(0.24, 0.16, t));
     return col;
   }
-  if (h < 0.11) {
-    const t = (h - 0.06) / 0.05;
-    col.setRGB(lerp(0.30, 0.28, t), lerp(0.26, 0.24, t), lerp(0.15, 0.14, t));
+  if (h < 0.10) {
+    const t = (h - 0.055) / 0.045;
+    // sandy beach → coastal lowland
+    col.setRGB(lerp(0.62, 0.38, t), lerp(0.56, 0.36, t), lerp(0.32, 0.22, t));
     return col;
   }
+
+  // ── SLOPE PROXY — high-freq noise variation mimics local steepness ──
+  // Real slope needs adjacent vertices; we approximate with high-freq noise
+  // that correlates with ridgeFbm detail in the heightmap.
+  const slopeProxy = ridgeFbm(nx * 44, ny * 44, 2, 83); // 0–1, high where steep
+  const rockiness = clamp(slopeProxy * 1.4 - 0.3); // threshold: rocky above ~0.5
 
   // ── BIOME CLASSIFICATION ──
-  // Mordor basin (inside the ring walls)
   const inMordor = inBox(nx, ny, 0.586, 0.744, 0.542, 0.712);
-  // Near Mount Doom
-  const nearDoom = inGauss(nx, ny, 0.670, 0.630, 0.040, 0.040);
-  // Dark Mordor mountain rock (ring walls themselves)
-  const mordorMtn = (gaussRidge(nx, ny,
-    [[0.578, 0.520],[0.578, 0.600],[0.572, 0.680]], 0.022, 1) > 0.18
-    || gaussRidge(nx, ny,
-    [[0.580, 0.535],[0.660, 0.524],[0.740, 0.537]], 0.020, 1) > 0.18)
-    && !inMordor;
+  const nearDoom  = inGauss(nx, ny, 0.670, 0.630, 0.040, 0.040);
+  const mordorMtn = (
+    gaussRidge(nx, ny, [[0.578,0.520],[0.578,0.600],[0.572,0.680]], 0.022, 1) > 0.15 ||
+    gaussRidge(nx, ny, [[0.580,0.535],[0.660,0.524],[0.740,0.537]], 0.020, 1) > 0.15
+  ) && !inMordor;
 
-  // The Shire
-  const inShire = inGauss(nx, ny, 0.165, 0.520, 0.082, 0.068);
-  // Eriador / Arnor
-  const inEriador = nx < 0.37 && ny > 0.18 && ny < 0.61 && !inShire;
-  // Rohan — SOUTH of MM/Fangorn, NORTH of White Mtns
-  const inRohan = inBox(nx, ny, 0.25, 0.47, 0.570, 0.662) && !inMordor;
-  // Fangorn — dense old-growth forest south end of MM
-  const inFangorn = inGauss(nx, ny, 0.372, 0.600, 0.030, 0.028);
-  // Gondor — south of White Mountains
-  const inGondor = inBox(nx, ny, 0.26, 0.575, 0.672, 0.835) && !inMordor;
-  // Lothlórien
-  const inLorien = inGauss(nx, ny, 0.400, 0.510, 0.040, 0.032);
-  // Mirkwood — long N-S forest east of MM
-  const inMirkwood = inBox(nx, ny, 0.440, 0.625, 0.190, 0.540)
-    && nx > 0.39 && !inMordor && !inLorien;
-  // Rhûn eastern steppe
-  const inRhun = nx > 0.73 && ny > 0.17 && ny < 0.62;
-  // Harad southern desert/savanna
-  const inHarad = ny > 0.78 && !inGondor && !inMordor;
+  const inShire    = inGauss(nx, ny, 0.165, 0.520, 0.082, 0.068);
+  const inEriador  = nx < 0.37 && ny > 0.18 && ny < 0.61 && !inShire;
+  const inRohan    = inBox(nx, ny, 0.25, 0.47, 0.570, 0.662) && !inMordor;
+  const inFangorn  = inGauss(nx, ny, 0.372, 0.600, 0.030, 0.028);
+  const inGondor   = inBox(nx, ny, 0.26, 0.575, 0.672, 0.835) && !inMordor;
+  const inLorien   = inGauss(nx, ny, 0.400, 0.510, 0.040, 0.032);
+  const inMirkwood = inBox(nx, ny, 0.440, 0.625, 0.190, 0.540) && nx > 0.39 && !inMordor && !inLorien;
+  const inRhun     = nx > 0.73 && ny > 0.17 && ny < 0.62;
+  const inHarad    = ny > 0.78 && !inGondor && !inMordor;
 
-  // ── HEIGHT-BASED OVERRIDES (snow caps, bare rock) ──
-  if (h > 0.72) {
-    const t = clamp((h - 0.72) / 0.12);
-    if (inMordor || nearDoom) {
-      col.setRGB(lerp(0.38, 0.08, t), lerp(0.07, 0.02, t), lerp(0.02, 0.01, t));
-    } else {
-      col.setRGB(lerp(0.78, 0.96, t), lerp(0.76, 0.95, t), lerp(0.68, 0.94, t));
-    }
+  // ── UNIVERSAL CLIFF/ROCK OVERRIDE — steep high terrain goes bare grey ──
+  // This is what makes mountains look CARVED, not painted.
+  // Any high + rocky area becomes stone regardless of biome.
+  const isBareCrag = h > 0.46 && rockiness > 0.55 && !inMordor;
+  const isSnowCap  = h > 0.68 && !inMordor;
+  const isVolcanic = (inMordor || mordorMtn || nearDoom) && h > 0.38;
+
+  if (isSnowCap) {
+    const t = clamp((h - 0.68) / 0.14);
+    // Grey rock fading to brilliant white snow
+    col.setRGB(lerp(0.72, 0.95, t), lerp(0.70, 0.94, t), lerp(0.64, 0.93, t));
     return col;
   }
-  if (h > 0.50) {
-    const t = clamp((h - 0.50) / 0.22);
-    if (mordorMtn || inMordor || nearDoom) {
-      col.setRGB(lerp(0.18, 0.10, t), lerp(0.05, 0.02, t), lerp(0.02, 0.01, t));
+  if (isVolcanic) {
+    // Volcanic dark rock with lava-crack orange glow in deepest areas
+    const lavaGlow = nearDoom ? clamp((0.65 - h) / 0.3) : 0;
+    const crack = turbulentFbm(nx * 32, ny * 32, 3, 199);
+    col.setRGB(
+      lerp(0.08, 0.35, lavaGlow * crack),
+      lerp(0.03, 0.05, lavaGlow * crack),
+      lerp(0.01, 0.01, 0)
+    );
+    return col;
+  }
+  if (isBareCrag) {
+    const t = clamp((h - 0.46) / 0.22);
+    // Wet grey-brown rock — darker in gullies, lighter on exposed ridges
+    const v = lerp(0.38, 0.62, t) + (rockiness - 0.55) * 0.18;
+    col.setRGB(v * 0.90, v * 0.85, v * 0.78);
+    return col;
+  }
+
+  // ── HIGH ROCK BANDS — mountain flanks below snow line ──
+  if (h > 0.52) {
+    const t = clamp((h - 0.52) / 0.16);
+    if (inMordor || mordorMtn) {
+      col.setRGB(lerp(0.16, 0.10, t), lerp(0.04, 0.02, t), lerp(0.02, 0.01, t));
     } else {
-      col.setRGB(lerp(0.44, 0.60, t), lerp(0.40, 0.55, t), lerp(0.32, 0.46, t));
+      // Grey-blue alpine rock
+      col.setRGB(lerp(0.40, 0.58, t), lerp(0.38, 0.54, t), lerp(0.30, 0.46, t));
     }
     return col;
   }
 
   // ── MID-ELEVATION BIOME COLOURS ──
-  const t = clamp((h - 0.11) / 0.39);
+  // Rock blending: on mountain flanks (h>0.38) mix in grey stone
+  const rockBlend = clamp((h - 0.35) / 0.17) * rockiness * 0.6;
+  const t = clamp((h - 0.10) / 0.42);
+
+  let r: number, g: number, b: number;
 
   if (nearDoom) {
-    col.setRGB(lerp(0.40, 0.22, t), lerp(0.09, 0.04, t), lerp(0.02, 0.01, t));
-    return col;
+    // Lava-lit volcanic rock
+    r = lerp(0.35, 0.18, t); g = lerp(0.07, 0.03, t); b = lerp(0.01, 0.01, t);
+  } else if (inMordor) {
+    // Ashy black volcanic plateau with texture variation
+    const ashVar = fbm(nx * 22, ny * 22, 2, 77) * 0.06;
+    r = lerp(0.12, 0.08, t) + ashVar; g = lerp(0.04, 0.03, t); b = lerp(0.02, 0.01, t);
+  } else if (inShire) {
+    // Vivid rolling green with pale-grass highlights
+    r = lerp(0.14, 0.28, t); g = lerp(0.44, 0.54, t); b = lerp(0.09, 0.15, t);
+  } else if (inFangorn) {
+    // Ancient dark forest
+    r = lerp(0.06, 0.12, t); g = lerp(0.16, 0.24, t); b = lerp(0.05, 0.09, t);
+  } else if (inLorien) {
+    // Golden-green woodland
+    r = lerp(0.26, 0.38, t); g = lerp(0.48, 0.56, t); b = lerp(0.11, 0.17, t);
+  } else if (inMirkwood) {
+    // Near-black dense canopy with murky green
+    r = lerp(0.05, 0.09, t); g = lerp(0.12, 0.19, t); b = lerp(0.04, 0.07, t);
+  } else if (inRohan) {
+    // Dry amber grassland, pale gold
+    r = lerp(0.46, 0.56, t); g = lerp(0.43, 0.50, t); b = lerp(0.16, 0.21, t);
+  } else if (inGondor) {
+    // Grey-green stone foothills
+    r = lerp(0.26, 0.38, t); g = lerp(0.31, 0.42, t); b = lerp(0.18, 0.28, t);
+  } else if (inHarad) {
+    // Hot desert sand + scrub
+    r = lerp(0.56, 0.68, t); g = lerp(0.44, 0.50, t); b = lerp(0.18, 0.22, t);
+  } else if (inRhun) {
+    // Dry eastern steppe
+    r = lerp(0.46, 0.54, t); g = lerp(0.40, 0.46, t); b = lerp(0.20, 0.26, t);
+  } else if (inEriador) {
+    // Temperate mixed woodland and moor
+    r = lerp(0.22, 0.33, t); g = lerp(0.36, 0.46, t); b = lerp(0.13, 0.19, t);
+  } else {
+    r = lerp(0.20, 0.33, t); g = lerp(0.34, 0.44, t); b = lerp(0.13, 0.20, t);
   }
-  if (inMordor) {
-    col.setRGB(lerp(0.15, 0.09, t), lerp(0.05, 0.03, t), lerp(0.03, 0.01, t));
-    return col;
-  }
-  if (inShire) {
-    col.setRGB(lerp(0.18, 0.30, t), lerp(0.46, 0.56, t), lerp(0.10, 0.16, t));
-    return col;
-  }
-  if (inFangorn) {
-    col.setRGB(lerp(0.07, 0.13, t), lerp(0.18, 0.26, t), lerp(0.06, 0.10, t));
-    return col;
-  }
-  if (inLorien) {
-    col.setRGB(lerp(0.28, 0.40, t), lerp(0.50, 0.58, t), lerp(0.12, 0.18, t));
-    return col;
-  }
-  if (inMirkwood) {
-    col.setRGB(lerp(0.06, 0.10, t), lerp(0.14, 0.21, t), lerp(0.05, 0.08, t));
-    return col;
-  }
-  if (inRohan) {
-    col.setRGB(lerp(0.48, 0.58, t), lerp(0.45, 0.52, t), lerp(0.17, 0.23, t));
-    return col;
-  }
-  if (inGondor) {
-    col.setRGB(lerp(0.28, 0.40, t), lerp(0.33, 0.44, t), lerp(0.20, 0.30, t));
-    return col;
-  }
-  if (inHarad) {
-    col.setRGB(lerp(0.58, 0.70, t), lerp(0.46, 0.52, t), lerp(0.20, 0.26, t));
-    return col;
-  }
-  if (inRhun) {
-    col.setRGB(lerp(0.48, 0.56, t), lerp(0.42, 0.48, t), lerp(0.22, 0.28, t));
-    return col;
-  }
-  if (inEriador) {
-    col.setRGB(lerp(0.23, 0.34, t), lerp(0.37, 0.47, t), lerp(0.14, 0.20, t));
-    return col;
-  }
-  col.setRGB(lerp(0.22, 0.35, t), lerp(0.35, 0.46, t), lerp(0.14, 0.21, t));
+
+  // Blend in cliff rock on steep mountain flanks
+  const rockR = 0.42, rockG = 0.38, rockB = 0.32;
+  col.setRGB(
+    lerp(r, rockR, rockBlend),
+    lerp(g, rockG, rockBlend),
+    lerp(b, rockB, rockBlend)
+  );
   return col;
 }
 
 // ─── Terrain mesh component ────────────────────────────────────────────────────
-const RES = 320; // vertex grid resolution
+const RES = 380; // vertex grid resolution — higher = sharper ridge silhouettes
 
 function TerrainMesh() {
   const meshRef = useRef<THREE.Mesh>(null);
