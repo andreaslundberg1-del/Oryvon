@@ -4,15 +4,12 @@ import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useTransitionPortal } from "@/components/TransitionManager";
 import { useAudio } from "@/components/AudioManager";
 import { useI18n } from "@/components/I18nProvider";
-import InteractiveMap from "@/components/InteractiveMap";
 import { UniverseCard } from "@/components/UniverseCard";
 import { supabase } from "@/lib/supabase";
 import HomeBackground from "@/components/HomeBackground";
 import { useCinematicScroll } from "@/hooks/useCinematicScroll";
 import OryndorLogo from "@/components/OryndorLogo";
-import CinematicCompass from "@/components/CinematicCompass";
-import PortalWorld, { PortalTheme } from "@/components/PortalWorld";
-import Sidebar from "@/components/Sidebar";
+import type { PortalTheme } from "@/components/PortalWorld";
 import gsap from "gsap";
 
 type Genre = string | null;
