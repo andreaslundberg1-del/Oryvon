@@ -7,11 +7,15 @@ import * as THREE from "three";
 import { useParallaxMotion } from "@/hooks/useParallaxMotion";
 import ParticleBackground from "./ParticleBackground";
 
+// Module-level scroll cache — updated by scroll event, read each RAF without getComputedStyle
+let _cachedScrollY = 0;
+if (typeof window !== "undefined") {
+  window.addEventListener("scroll", () => { _cachedScrollY = window.scrollY; }, { passive: true });
+}
+
 function CinematicCamera() {
   useFrame((state) => {
-    const raw = getComputedStyle(document.documentElement).getPropertyValue("--oryvon-scroll-y");
-    const scrollY = raw ? parseFloat(raw) : 0;
-    const targetZ = 5 - scrollY * 0.0018;
+    const targetZ = 5 - _cachedScrollY * 0.0018;
     state.camera.position.z = THREE.MathUtils.lerp(state.camera.position.z, targetZ, 0.04);
     state.camera.position.x = Math.sin(state.clock.elapsedTime * 0.05) * 0.25;
     state.camera.position.y = Math.cos(state.clock.elapsedTime * 0.04) * 0.2;
@@ -28,7 +32,7 @@ function AnimatedStars() {
   });
   return (
     <group ref={groupRef}>
-      <Stars radius={200} depth={80} count={3500} factor={3} saturation={0.05} fade speed={0.2} />
+      <Stars radius={200} depth={80} count={2000} factor={3} saturation={0.05} fade speed={0.2} />
     </group>
   );
 }
@@ -89,10 +93,13 @@ function HomeBackgroundInner({ activeTimeline }: { activeTimeline: string | null
         <img
           src="/Images/cosmic_bg.png"
           alt=""
+          loading="lazy"
+          decoding="async"
           className="absolute inset-0 w-full h-full object-cover oryvon-nebula-drift"
           style={{
-            filter: "brightness(0.72) saturate(1.15) contrast(1.05)",
+            filter: "brightness(0.72) saturate(1.1)",
             transformOrigin: "center center",
+            willChange: "transform",
           }}
         />
         {/* Radial vignette to blend edges into black */}
@@ -115,29 +122,24 @@ function HomeBackgroundInner({ activeTimeline }: { activeTimeline: string | null
           className="absolute inset-0 opacity-[0.28]"
           style={{
             background:
-              "radial-gradient(circle at 50% 40%, rgba(201,147,58,0.22) 0%, transparent 65%), radial-gradient(circle at 20% 70%, rgba(139,92,246,0.06) 0%, transparent 55%), radial-gradient(circle at 80% 30%, rgba(201,147,58,0.12) 0%, transparent 60%)",
-            filter: "blur(48px)",
+              "radial-gradient(circle at 50% 40%, rgba(201,147,58,0.14) 0%, transparent 65%), radial-gradient(circle at 20% 70%, rgba(139,92,246,0.04) 0%, transparent 55%), radial-gradient(circle at 80% 30%, rgba(201,147,58,0.08) 0%, transparent 60%)",
+            willChange: "transform",
           }}
         />
-        <div
-          className="absolute inset-0 opacity-[0.14] oryvon-nebula-drift"
-          style={{
-            background: "radial-gradient(circle at 50% 40%, rgba(124,58,237,0.05) 0%, transparent 70%)",
-            filter: "blur(56px)",
-          }}
-        />
-        <div className="absolute inset-0 opacity-80">
-          <Canvas
-            camera={{ position: [0, 0, 5], fov: 60 }}
-            gl={{ alpha: true, antialias: false, powerPreference: "high-performance" }}
-            dpr={[1, 1.5]}
-          >
-            <fog attach="fog" args={["#020101", 120, 320]} />
-            <ambientLight intensity={0.01} color="#ffcc80" />
-            <CinematicCamera />
-            <AnimatedStars />
-          </Canvas>
-        </div>
+        {typeof window !== "undefined" && !('ontouchstart' in window) && (
+          <div className="absolute inset-0 opacity-80">
+            <Canvas
+              camera={{ position: [0, 0, 5], fov: 60 }}
+              gl={{ alpha: true, antialias: false, powerPreference: "high-performance" }}
+              dpr={[1, 1.2]}
+            >
+              <fog attach="fog" args={["#020101", 120, 320]} />
+              <ambientLight intensity={0.01} color="#ffcc80" />
+              <CinematicCamera />
+              <AnimatedStars />
+            </Canvas>
+          </div>
+        )}
       </div>
 
 
@@ -149,6 +151,7 @@ function HomeBackgroundInner({ activeTimeline }: { activeTimeline: string | null
           opacity: heroVisible ? 1 : 0,
           transition: "opacity 1.2s ease-out",
           perspective: 1000,
+          contain: "paint",
         }}
       >
         <div
@@ -233,7 +236,7 @@ function HomeBackgroundInner({ activeTimeline }: { activeTimeline: string | null
           transition: "opacity 1.2s ease-out",
         }}
       >
-        <div className="absolute top-[40%] left-[-10%] w-[120%] h-[30%] bg-[radial-gradient(ellipse_at_center,rgba(110,75,30,0.08)_0%,transparent_70%)] blur-[32px] oryvon-mist-drift" />
+        <div className="absolute top-[40%] left-[-10%] w-[120%] h-[30%] bg-[radial-gradient(ellipse_at_center,rgba(110,75,30,0.06)_0%,transparent_70%)] oryvon-mist-drift" style={{ willChange: 'transform' }} />
         <div className="absolute bottom-0 left-0 right-0 h-[38%] bg-gradient-to-t from-[#020101] via-[#020101]/80 to-transparent" />
       </div>
 

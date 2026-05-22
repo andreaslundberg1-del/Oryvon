@@ -45,6 +45,10 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${outfit.variable} ${vt323.variable} ${spaceGrotesk.variable} ${pressStart2P.variable} h-full antialiased`}
     >
+      <head>
+        {/* Preload critical hero assets */}
+        <link rel="preload" href="/Images/oryndor_symbol.png" as="image" />
+      </head>
       <body className="min-h-full flex flex-col bg-black text-white selection:bg-white/30">
         <div className="noise-overlay" aria-hidden="true" />
         <div className="scanline-overlay" aria-hidden="true" />

@@ -1365,16 +1365,29 @@ function Ticker() {
 /* ── Reusable Netflix-Style Scrolling Row Wrapper with Hover Chevrons ── */
 function NetflixScrollRow({ children }: { children: React.ReactNode }) {
   const rowRef = useRef<HTMLDivElement>(null);
+  const isDragging = useRef(false);
+  const startX = useRef(0);
+  const scrollLeftRef = useRef(0);
 
   const scroll = (direction: "left" | "right") => {
     if (rowRef.current) {
-      const scrollAmount = 560;
-      rowRef.current.scrollBy({
-        left: direction === "left" ? -scrollAmount : scrollAmount,
-        behavior: "smooth",
-      });
+      rowRef.current.scrollBy({ left: direction === "left" ? -600 : 600, behavior: "smooth" });
     }
   };
+
+  const onMouseDown = (e: React.MouseEvent) => {
+    if (!rowRef.current) return;
+    isDragging.current = true;
+    startX.current = e.pageX - rowRef.current.offsetLeft;
+    scrollLeftRef.current = rowRef.current.scrollLeft;
+    rowRef.current.style.cursor = "grabbing";
+  };
+  const onMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging.current || !rowRef.current) return;
+    e.preventDefault();
+    rowRef.current.scrollLeft = scrollLeftRef.current - (e.pageX - rowRef.current.offsetLeft - startX.current) * 1.4;
+  };
+  const onMouseUp = () => { isDragging.current = false; if (rowRef.current) rowRef.current.style.cursor = "grab"; };
 
   return (
     <div className="relative group/row w-full">
@@ -1399,11 +1412,11 @@ function NetflixScrollRow({ children }: { children: React.ReactNode }) {
         </svg>
       </button>
 
-      {/* Row container - horizontal scroll on desktop, 2-column grid on tablet */}
       <div
         ref={rowRef}
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 xl:flex gap-4 md:gap-6 scrollbar-none pb-4 scroll-smooth w-full px-2 snap-x snap-mandatory pt-2"
-        style={{ scrollbarWidth: "none" }}
+        className="flex gap-3 overflow-x-auto pb-3 pt-1 snap-x snap-mandatory"
+        style={{ scrollbarWidth: "none", cursor: "grab" } as React.CSSProperties}
+        onMouseDown={onMouseDown} onMouseMove={onMouseMove} onMouseUp={onMouseUp} onMouseLeave={onMouseUp}
       >
         {children}
       </div>
@@ -1428,6 +1441,62 @@ function NetflixScrollRow({ children }: { children: React.ReactNode }) {
           />
         </svg>
       </button>
+    </div>
+  );
+}
+
+/* ── CinematicRow: labeled Netflix-style section ── */
+function CinematicRow({ title, badge, color, children }: { title: string; badge: string; color: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center justify-between px-1">
+        <h3 className="font-normal tracking-[0.25em] text-white uppercase text-[11px] flex items-center gap-2" style={{ fontFamily: "'Cinzel', serif" }}>
+          <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+          {title}
+        </h3>
+        <span className="font-mono text-[7px] tracking-[0.12em] uppercase" style={{ color: `${color}88` }}>{badge}</span>
+      </div>
+      <NetflixScrollRow>{children}</NetflixScrollRow>
+    </div>
+  );
+}
+
+/* ── CinematicCard: poster with hover-reveal ── */
+function CinematicCard({ uni, color, onEnter, onHover }: { uni: any; color: string; onEnter: () => void; onHover: () => void }) {
+  const [hov, setHov] = React.useState(false);
+  return (
+    <div className="snap-start shrink-0 relative rounded-xl overflow-hidden select-none"
+      style={{ width: "clamp(150px, 18vw, 200px)", aspectRatio: "2/3", cursor: "none", transform: hov ? "scale(1.07)" : "scale(1)", boxShadow: hov ? `0 12px 40px rgba(0,0,0,0.9), 0 0 18px ${color}33` : "0 4px 18px rgba(0,0,0,0.6)", zIndex: hov ? 10 : 1, transition: "transform 0.25s ease, box-shadow 0.25s ease" }}
+      onMouseEnter={() => { setHov(true); onHover(); }} onMouseLeave={() => setHov(false)}>
+      <div className="absolute inset-0 bg-cover bg-center transition-transform duration-500" style={{ backgroundImage: `url(${uni.image})`, transform: hov ? "scale(1.08)" : "scale(1)" }} />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
+      <div className="absolute bottom-0 left-0 right-0 p-3 flex flex-col gap-1 transition-all duration-300"
+        style={{ opacity: hov ? 0 : 1, transform: hov ? "translateY(6px)" : "translateY(0)" }}>
+        {uni.featured && <span className="font-mono text-[6px] tracking-widest uppercase" style={{ color }}>★ Featured</span>}
+        <p className="font-normal text-white text-[11px] leading-tight" style={{ fontFamily: "'Cinzel', serif" }}>{uni.title}</p>
+        <div className="flex items-center gap-2">
+          <span className="font-mono text-[7px] text-white/50">{uni.rating}</span>
+          <span className="font-mono text-[6px] text-white/30 uppercase tracking-widest">{uni.releaseYears}</span>
+        </div>
+      </div>
+      <div className="absolute inset-0 flex flex-col justify-end transition-all duration-300"
+        style={{ opacity: hov ? 1 : 0, transform: hov ? "translateY(0)" : "translateY(8px)" }}>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/70 to-transparent" />
+        <div className="relative p-3 flex flex-col gap-1.5">
+          <p className="font-normal text-white text-[10px] leading-tight" style={{ fontFamily: "'Cinzel', serif" }}>{uni.title}</p>
+          <div className="flex flex-wrap gap-1">
+            {uni.categoryTags.slice(0, 2).map((tag: string, i: number) => (
+              <span key={i} className="font-mono text-[6px] tracking-[0.1em] uppercase text-white/40 border border-white/10 px-1.5 py-0.5 rounded-full">{tag}</span>
+            ))}
+          </div>
+          <p className="font-sans text-white/55 text-[9px] leading-snug line-clamp-2">{uni.teaser}</p>
+          <button onClick={(e) => { e.stopPropagation(); onEnter(); }}
+            className="mt-1 w-full py-1.5 rounded font-mono text-[7px] tracking-[0.2em] uppercase text-black font-bold hover:brightness-110 transition-all"
+            style={{ background: color, boxShadow: `0 0 12px ${color}55` }}>
+            Enter Universe →
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -1647,7 +1716,7 @@ export default function Home() {
           opacity: opacity,
           animation: `gold-float ${duration}s ease-in-out ${delay}s infinite alternate`,
           pointerEvents: "none" as const,
-          boxShadow: size > 1.8 ? "0 0 6px rgba(255, 233, 163, 0.75)" : "none",
+          /* box-shadow removed — caused GPU overdraw on every animated particle */
         },
       };
     });
@@ -1995,14 +2064,8 @@ export default function Home() {
           }}
         >
           {selectedGenre && activeGenreInfo ? (
-            /* ── Immersive Unified Netflix/IMDb Multiverse Portal (Layer 1) ── */
-            <div 
-              className="flex flex-col items-center w-full"
-              style={{
-                paddingTop: 'clamp(2rem, 4vw, 4rem)',
-                gap: 'clamp(1.5rem, 3vw, 3rem)',
-              }}
-            >
+            /* ── ORYVON Netflix Streaming Portal ── */
+            <div className="flex flex-col w-full" style={{ marginTop: 'clamp(-4rem, -8vw, -5rem)' }}>
               {/* Top Navigation Bar */}
               <div 
                 className="flex flex-row justify-between items-center w-full"

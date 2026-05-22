@@ -46,7 +46,7 @@ export default function ParticleBackground() {
 
     const initParticles = () => {
       particles = [];
-      for (let i = 0; i < 180; i++) {
+      for (let i = 0; i < 100; i++) {
         particles.push({
           x: Math.random() * width,
           y: Math.random() * height,
@@ -73,6 +73,10 @@ export default function ParticleBackground() {
     let time = 0;
 
     const render = () => {
+      if (document.hidden) {
+        animationFrameId = requestAnimationFrame(render);
+        return;
+      }
       time += 0.008;
       ctx.clearRect(0, 0, width, height);
 

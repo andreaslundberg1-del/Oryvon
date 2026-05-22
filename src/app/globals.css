@@ -64,7 +64,7 @@ body {
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
   background-color: var(--era-bg);
   color: var(--era-text);
-  transition: background-color 0.5s ease, color 0.5s ease;
+  /* Removed transition: background-color/color — caused full repaint on every scroll-triggered theme update */
 }
 
 /* Hide scrollbar for immersive feel */
@@ -199,6 +199,7 @@ body {
 
 .oryvon-mist-drift {
   animation: oryvon-mist-slide 48s ease-in-out infinite alternate;
+  will-change: transform;
 }
 
 @keyframes oryvon-mist-slide {
@@ -225,6 +226,7 @@ body {
 
 .god-ray-stable {
   animation: god-ray-breathe 14s ease-in-out infinite alternate;
+  will-change: transform, opacity;
 }
 
 @keyframes god-ray-breathe {
@@ -241,6 +243,8 @@ body {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E");
   background-repeat: repeat;
   background-size: 256px 256px;
+  will-change: transform;
+  transform: translateZ(0);
 }
 
 .scanline-overlay {
@@ -256,11 +260,13 @@ body {
     rgba(0,0,0,0.015) 4px,
     rgba(0,0,0,0.015) 5px
   );
+  transform: translateZ(0);
 }
 
 .oryvon-compass-float {
   animation: oryvon-compass-float 8s ease-in-out infinite alternate;
   filter: drop-shadow(0 0 28px rgba(201, 147, 58, 0.28));
+  will-change: transform;
 }
 
 @keyframes oryvon-compass-float {
@@ -270,6 +276,7 @@ body {
 
 .oryvon-descend-hint {
   animation: oryvon-descend-hint 2.8s ease-in-out infinite;
+  will-change: transform, opacity;
 }
 
 @keyframes oryvon-descend-hint {
@@ -315,5 +322,6 @@ body {
   display: inline-flex;
   white-space: nowrap;
   animation: marquee-scroll 28s linear infinite;
+  will-change: transform;
 }
 .marquee-track:hover { animation-play-state: paused; }

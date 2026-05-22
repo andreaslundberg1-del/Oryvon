@@ -9,6 +9,22 @@ type ParallaxFactors = {
   scaleScroll?: number;
 };
 
+// Module-level scroll cache shared across all parallax instances — one listener, zero getComputedStyle calls
+let _parallaxScrollY = 0;
+if (typeof window !== "undefined") {
+  window.addEventListener("scroll", () => { _parallaxScrollY = window.scrollY; }, { passive: true });
+}
+
+// Single shared mouse state — avoids N separate mousemove listeners for N parallax layers
+let _mouseTargetX = 0;
+let _mouseTargetY = 0;
+if (typeof window !== "undefined") {
+  window.addEventListener("mousemove", (e: MouseEvent) => {
+    _mouseTargetX = e.clientX / window.innerWidth - 0.5;
+    _mouseTargetY = e.clientY / window.innerHeight - 0.5;
+  }, { passive: true });
+}
+
 /**
  * Applies transform directly to a DOM node each frame — no React state updates.
  */
@@ -22,43 +38,23 @@ export function useParallaxMotion(
     const el = ref.current;
     if (!el) return;
 
-    let targetX = 0;
-    let targetY = 0;
     let mouseX = 0;
     let mouseY = 0;
-    let scrollY = 0;
     let rafId = 0;
 
-    const onMove = (e: MouseEvent) => {
-      targetX = e.clientX / window.innerWidth - 0.5;
-      targetY = e.clientY / window.innerHeight - 0.5;
-    };
-
-    const readScroll = () => {
-      const raw = getComputedStyle(document.documentElement).getPropertyValue("--oryvon-scroll-y");
-      scrollY = raw ? parseFloat(raw) : window.scrollY;
-    };
-
     const tick = () => {
-      readScroll();
-      mouseX += (targetX - mouseX) * 0.06;
-      mouseY += (targetY - mouseY) * 0.06;
+      mouseX += (_mouseTargetX - mouseX) * 0.06;
+      mouseY += (_mouseTargetY - mouseY) * 0.06;
 
-      const scale = factors.scaleScroll
-        ? 1 + scrollY * factors.scaleScroll
-        : 1;
+      const scrollY = _parallaxScrollY;
+      const scale = factors.scaleScroll ? 1 + scrollY * factors.scaleScroll : 1;
 
       el.style.transform = `translate3d(${mouseX * factors.mouseX}px, ${mouseY * factors.mouseY + scrollY * factors.scrollY}px, 0) scale(${scale})`;
 
       rafId = requestAnimationFrame(tick);
     };
 
-    window.addEventListener("mousemove", onMove, { passive: true });
     rafId = requestAnimationFrame(tick);
-
-    return () => {
-      window.removeEventListener("mousemove", onMove);
-      cancelAnimationFrame(rafId);
-    };
+    return () => { cancelAnimationFrame(rafId); };
   }, [enabled, factors.mouseX, factors.mouseY, factors.scrollY, factors.scaleScroll, ref]);
 }

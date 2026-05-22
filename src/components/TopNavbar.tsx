@@ -36,17 +36,21 @@ export default function TopNavbar() {
     return () => window.removeEventListener("oryvon-genre-updated", handleGenreUpdated);
   }, []);
 
-  // Monitor scroll for glassmorphism background transitions
+  // Monitor scroll for glassmorphism background transitions — throttled via RAF
   useEffect(() => {
+    let rafId = 0;
     const handleScroll = () => {
-      if (window.scrollY > 30) {
-        setIsScrolled(true);
-      } else {
-        setIsScrolled(false);
-      }
+      if (rafId) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = 0;
+        setIsScrolled(window.scrollY > 30);
+      });
     };
     window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (rafId) cancelAnimationFrame(rafId);
+    };
   }, []);
 
   // Sync settings with localStorage and apply classes to document.body
